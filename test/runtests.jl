@@ -3,20 +3,19 @@ using AdvancedMH
 using Random
 
 @testset "AdvancedMH" begin
+    # Generate a set of data from the posterior we want to estimate.
+    data = rand(Normal(5, 3), 30)
+
     # Define the components of a basic model.
     insupport(θ) = θ[2] >= 0
     dist(θ) = Normal(θ[1], θ[2])
-    density(data, θ) = insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
-
-    # Generate a set of data from the posterior we want to estimate.
-    Random.seed!(1)
-    data = rand(Normal(0, 1), 30)
+    density(θ) = insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
 
     # Construct a DensityModel.
-    model = DensityModel(density, data)
+    model = DensityModel(density)
 
-    # Set up our sampler.
-    spl = MetropolisHastings([0.0, 0.0], x -> MvNormal(x, 1.0))
+    # Set up our sampler with initial parameters.
+    spl = MetropolisHastings([0.0, 0.0])
 
     # Sample from the posterior.
     chain = sample(model, spl, 100000; param_names=["μ", "σ"])

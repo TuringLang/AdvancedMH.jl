@@ -14,31 +14,55 @@ import Turing.Interface: step!, AbstractSampler, AbstractTransition, transition_
 # Exports
 export MetropolisHastings, DensityModel, sample
 
-# Define a sampler type.
-struct MetropolisHastings{T} <: AbstractSampler 
+"""
+    MetropolisHastings{T, F<:Function}
+
+Fields:
+
+- `init_θ` is the vector form of the parameters needed for the likelihood function.
+- `proposal` is a function that dynamically constructs a conditional distribution.
+
+Example:
+
+```julia
+MetropolisHastings([0.0, 0.0], x -> MvNormal(x, 1.0))
+````
+"""
+struct MetropolisHastings{T, F<:Function} <: AbstractSampler 
     init_θ :: T
-    proposal :: Function
+    proposal :: F
 end
 
 # Default constructors.
-MetropolisHastings(init_θ::T) where T<:Real = MetropolisHastings{T}(init_θ, x -> Normal(x, 1.0))
-MetropolisHastings(init_θ::T) where T<:Vector{<:Real} = MetropolisHastings{T}(init_θ, x -> MvNormal(x, 1.0))
+MetropolisHastings(init_θ::Real) = MetropolisHastings(init_θ, x -> Normal(x, 1.0))
+MetropolisHastings(init_θ::Vector{<:Real}) = MetropolisHastings(init_θ, x -> MvNormal(x, 1.0))
 
 # Define a model type. Stores the log density function and the data to 
 # evaluate the log density on.
-struct DensityModel{V<:VariateForm, S<:ValueSupport, T} <: Sampleable{V, S}
-    π :: Function
-    data :: T
+"""
+    DensityModel{V<:VariateForm, S<:ValueSupport, F<:Function} <: Sampleable{V, S}
+
+`DensityModel` wraps around a self-contained log-liklihood function `ℓπ`.
+
+Example:
+
+```julia
+l
+DensityModel
+```
+"""
+struct DensityModel{V<:VariateForm, S<:ValueSupport, F<:Function} <: Sampleable{V, S}
+    ℓπ :: F
 end
 
 # Default density constructor.
-DensityModel(π::Function, data::T) where T = DensityModel{VariateForm, ValueSupport, T}(π, data)
+DensityModel(ℓπ::F) where F = DensityModel{VariateForm, ValueSupport, F}(ℓπ)
 
 # Create a very basic Transition type, only stores the 
 # parameter draws and the log probability of the draw.
-struct Transition{T<:Union{Vector{<:Real}, <:Real}} <: AbstractTransition
+struct Transition{T<:Union{Vector{<:Real}, <:Real}, L<:Real} <: AbstractTransition
     θ :: T
-    lp :: Float64
+    lp :: L
 end
 
 # Store the new draw and its log density.
@@ -49,17 +73,23 @@ transition_type(model::DensityModel, spl::MetropolisHastings) = typeof(Transitio
 
 # Define a function that makes a basic proposal depending on a univariate
 # parameterization or a multivariate parameterization.
-proposal(spl::MetropolisHastings, model::DensityModel, θ::Real) = Transition(model, rand(spl.proposal(θ)))
-proposal(spl::MetropolisHastings, model::DensityModel, θ::Vector{<:Real}) = Transition(model, rand(spl.proposal(θ)))
-proposal(spl::MetropolisHastings, model::DensityModel, t::Transition) = proposal(spl, model, t.θ)
+propose(spl::MetropolisHastings, model::DensityModel, θ::Real) = Transition(model, rand(spl.proposal(θ)))
+propose(spl::MetropolisHastings, model::DensityModel, θ::Vector{<:Real}) = Transition(model, rand(spl.proposal(θ)))
+propose(spl::MetropolisHastings, model::DensityModel, t::Transition) = propose(spl, model, t.θ)
 
-# Calculate the logpdf of one proposal given another proposal.
-q(spl::MetropolisHastings, θ1::Real, θ2::Real) = logpdf(spl.proposal(θ1), θ2)
-q(spl::MetropolisHastings, θ1::Vector{<:Real}, θ2::Vector{<:Real}) = logpdf(spl.proposal(θ1), θ2)
+"""
+    q(spl::MetropolisHastings, θ1::Real, θ2::Real)
+    q(spl::MetropolisHastings, θ1::Vector{<:Real}, θ2::Vector{<:Real})
+    q(spl::MetropolisHastings, t1::Transition, t2::Transition)
+
+Calculates the probability `q(θ1 | θ2)`, using the proposal distribution `spl.proposal`.
+"""
+q(spl::MetropolisHastings, θ1::Real, θ2::Real) = logpdf(spl.proposal(θ2), θ1)
+q(spl::MetropolisHastings, θ1::Vector{<:Real}, θ2::Vector{<:Real}) = logpdf(spl.proposal(θ2), θ1)
 q(spl::MetropolisHastings, t1::Transition, t2::Transition) = q(spl, t1.θ, t2.θ)
 
 # Calculate the density of the model given some parameterization.
-ℓπ(model::DensityModel, θ::T) where T = model.π(model.data, θ)
+ℓπ(model::DensityModel, θ::T) where T = model.ℓπ(θ)
 ℓπ(model::DensityModel, t::Transition) = t.lp
 
 # Define the first step! function, which is called at the 
@@ -67,14 +97,11 @@ q(spl::MetropolisHastings, t1::Transition, t2::Transition) = q(spl, t1.θ, t2.θ
 # to define the sampler.
 function step!(
     rng::AbstractRNG,
-    model::M,
-    spl::S,
+    model::DensityModel,
+    spl::MetropolisHastings,
     N::Integer;
     kwargs...
-) where {
-    M <: DensityModel,
-    S <: MetropolisHastings
-}
+)
     return Transition(model, spl.init_θ)
 end
 
@@ -83,24 +110,20 @@ end
 # (if not accepted).
 function step!(
     rng::AbstractRNG,
-    model::M,
-    spl::S,
+    model::DensityModel,
+    spl::MetropolisHastings,
     ::Integer,
-    θ_prev::T;
+    θ_prev::Transition;
     kwargs...
-) where {
-    M <: DensityModel,
-    S <: MetropolisHastings,
-    T <: Transition
-}
+)
     # Generate a new proposal.
-    θ = proposal(spl, model, θ_prev)
+    θ = propose(spl, model, θ_prev)
     
     # Calculate the log acceptance probability.
-    α = ℓπ(model, θ) - ℓπ(model, θ_prev) + q(spl, θ_prev, θ) - q(spl, θ, θ_prev)
+    α = ℓπ(model, θ) - ℓπ(model, θ_prev) + q(spl, θ, θ_prev) - q(spl, θ_prev, θ)
 
     # Decide whether to return the previous θ or the new one.
-    if log(rand()) < min(α, 0.0)
+    if log(rand(rng)) < min(α, 0.0)
         return θ
     else
         return θ_prev
