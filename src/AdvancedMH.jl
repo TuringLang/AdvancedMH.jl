@@ -40,7 +40,7 @@ MetropolisHastings(init_θ::Vector{<:Real}) = MetropolisHastings(init_θ, MvNorm
 # Define a model type. Stores the log density function and the data to 
 # evaluate the log density on.
 """
-    DensityModel{V<:VariateForm, S<:ValueSupport, F<:Function} <: AbstractModel
+    DensityModel{F<:Function} <: AbstractModel
 
 `DensityModel` wraps around a self-contained log-liklihood function `ℓπ`.
 
@@ -51,7 +51,7 @@ l
 DensityModel
 ```
 """
-struct DensityModel{V<:VariateForm, S<:ValueSupport, F<:Function} <: AbstractModel
+struct DensityModel{F<:Function} <: AbstractModel
     ℓπ :: F
 end
 
