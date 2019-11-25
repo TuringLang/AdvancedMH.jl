@@ -2,14 +2,14 @@ module AdvancedMH
 
 # Import the relevant libraries.
 using Reexport
-using Turing.Interface
-@reexport using Distributions
+using AbstractMCMC
+using Distributions
 using Random
 
 # Import specific functions and types to use or overload.
 import Distributions: VariateForm, ValueSupport, variate_form, value_support, Sampleable
 import MCMCChains: Chains
-import Turing.Interface: step!, AbstractSampler, AbstractTransition, transition_type
+import AbstractMCMC: step!, AbstractSampler, AbstractTransition, transition_type, bundle_samples
 
 # Exports
 export MetropolisHastings, DensityModel, sample
@@ -28,19 +28,19 @@ Example:
 MetropolisHastings([0.0, 0.0], x -> MvNormal(x, 1.0))
 ````
 """
-struct MetropolisHastings{T, F<:Function} <: AbstractSampler 
+struct MetropolisHastings{T, D} <: AbstractSampler 
     init_θ :: T
-    proposal :: F
+    proposal :: D
 end
 
 # Default constructors.
-MetropolisHastings(init_θ::Real) = MetropolisHastings(init_θ, x -> Normal(x, 1.0))
-MetropolisHastings(init_θ::Vector{<:Real}) = MetropolisHastings(init_θ, x -> MvNormal(x, 1.0))
+MetropolisHastings(init_θ::Real) = MetropolisHastings(init_θ, Normal(0,1))
+MetropolisHastings(init_θ::Vector{<:Real}) = MetropolisHastings(init_θ, MvNormal(length(init_θ),1))
 
 # Define a model type. Stores the log density function and the data to 
 # evaluate the log density on.
 """
-    DensityModel{V<:VariateForm, S<:ValueSupport, F<:Function} <: Sampleable{V, S}
+    DensityModel{V<:VariateForm, S<:ValueSupport, F<:Function} <: AbstractModel
 
 `DensityModel` wraps around a self-contained log-liklihood function `ℓπ`.
 
@@ -51,7 +51,7 @@ l
 DensityModel
 ```
 """
-struct DensityModel{V<:VariateForm, S<:ValueSupport, F<:Function} <: Sampleable{V, S}
+struct DensityModel{V<:VariateForm, S<:ValueSupport, F<:Function} <: AbstractModel
     ℓπ :: F
 end
 
@@ -73,19 +73,22 @@ transition_type(model::DensityModel, spl::MetropolisHastings) = typeof(Transitio
 
 # Define a function that makes a basic proposal depending on a univariate
 # parameterization or a multivariate parameterization.
-propose(spl::MetropolisHastings, model::DensityModel, θ::Real) = Transition(model, rand(spl.proposal(θ)))
-propose(spl::MetropolisHastings, model::DensityModel, θ::Vector{<:Real}) = Transition(model, rand(spl.proposal(θ)))
+propose(spl::MetropolisHastings, model::DensityModel, θ::Real) = 
+    Transition(model, θ + rand(spl.proposal))
+propose(spl::MetropolisHastings, model::DensityModel, θ::Vector{<:Real}) = 
+    Transition(model, θ + rand(spl.proposal))
 propose(spl::MetropolisHastings, model::DensityModel, t::Transition) = propose(spl, model, t.θ)
 
 """
-    q(spl::MetropolisHastings, θ1::Real, θ2::Real)
-    q(spl::MetropolisHastings, θ1::Vector{<:Real}, θ2::Vector{<:Real})
-    q(spl::MetropolisHastings, t1::Transition, t2::Transition)
+    q(θ::Real, dist::Sampleable)
+    q(θ::Vector{<:Real}, dist::Sampleable)
+    q(t1::Transition, dist::Sampleable)
 
 Calculates the probability `q(θ1 | θ2)`, using the proposal distribution `spl.proposal`.
+Proposal distributions are generated using `κ(spl, θ)`.
 """
-q(spl::MetropolisHastings, θ1::Real, θ2::Real) = logpdf(spl.proposal(θ2), θ1)
-q(spl::MetropolisHastings, θ1::Vector{<:Real}, θ2::Vector{<:Real}) = logpdf(spl.proposal(θ2), θ1)
+q(spl::MetropolisHastings, θ::Real, θcond::Real) = logpdf(spl.proposal, θ - θcond)
+q(spl::MetropolisHastings, θ::Vector{<:Real}, θcond::Vector{<:Real}) = logpdf(spl.proposal, θ - θcond)
 q(spl::MetropolisHastings, t1::Transition, t2::Transition) = q(spl, t1.θ, t2.θ)
 
 # Calculate the density of the model given some parameterization.
@@ -118,9 +121,9 @@ function step!(
 )
     # Generate a new proposal.
     θ = propose(spl, model, θ_prev)
-    
+
     # Calculate the log acceptance probability.
-    α = ℓπ(model, θ) - ℓπ(model, θ_prev) + q(spl, θ, θ_prev) - q(spl, θ_prev, θ)
+    α = ℓπ(model, θ) - ℓπ(model, θ_prev) + q(spl, θ_prev, θ) - q(spl, θ, θ_prev)
 
     # Decide whether to return the previous θ or the new one.
     if log(rand(rng)) < min(α, 0.0)
@@ -131,7 +134,7 @@ function step!(
 end
 
 # A basic chains constructor that works with the Transition struct we defined.
-function Chains(
+function bundle_samples(
     rng::AbstractRNG, 
     ℓ::DensityModel, 
     s::MetropolisHastings, 
@@ -139,9 +142,9 @@ function Chains(
     ts::Vector{T}; 
     param_names=missing,
     kwargs...
-) where {T <: Transition}
+) where {ModelType<:AbstractModel, T<:AbstractTransition}
     # Turn all the transitions into a vector-of-vectors.
-    vals = [vcat(t.θ, t.lp) for t in ts]
+    vals = copy(reduce(hcat,[vcat(t.θ, t.lp) for t in ts])')
 
     # Check if we received any parameter names.
     if ismissing(param_names)
@@ -155,4 +158,4 @@ function Chains(
     return Chains(vals, param_names, (internals=["lp"],))
 end
 
-end
+end # module AdvancedMH
