@@ -7,7 +7,6 @@ using Distributions
 using Random
 
 # Import specific functions and types to use or overload.
-import Distributions: VariateForm, ValueSupport, variate_form, value_support, Sampleable
 import MCMCChains: Chains
 import AbstractMCMC: step!, AbstractSampler, AbstractTransition, transition_type, bundle_samples
 
@@ -55,9 +54,6 @@ struct DensityModel{F<:Function} <: AbstractModel
     ℓπ :: F
 end
 
-# Default density constructor.
-DensityModel(ℓπ::F) where F = DensityModel{VariateForm, ValueSupport, F}(ℓπ)
-
 # Create a very basic Transition type, only stores the 
 # parameter draws and the log probability of the draw.
 struct Transition{T<:Union{Vector{<:Real}, <:Real}, L<:Real} <: AbstractTransition
@@ -84,8 +80,7 @@ propose(spl::MetropolisHastings, model::DensityModel, t::Transition) = propose(s
     q(θ::Vector{<:Real}, dist::Sampleable)
     q(t1::Transition, dist::Sampleable)
 
-Calculates the probability `q(θ1 | θ2)`, using the proposal distribution `spl.proposal`.
-Proposal distributions are generated using `κ(spl, θ)`.
+Calculates the probability `q(θ | θcond)`, using the proposal distribution `spl.proposal`.
 """
 q(spl::MetropolisHastings, θ::Real, θcond::Real) = logpdf(spl.proposal, θ - θcond)
 q(spl::MetropolisHastings, θ::Vector{<:Real}, θcond::Vector{<:Real}) = logpdf(spl.proposal, θ - θcond)
