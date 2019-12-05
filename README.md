@@ -63,7 +63,7 @@ Quantiles
 
 ## Custom proposals
 
-Custom proposal distributions can be specified by passing a function to `MetropolisHastings`:
+Custom proposal distributions can be specified by passing a distribution to `MetropolisHastings`:
 
 ```julia
 # Set up our sampler with initial parameters.
