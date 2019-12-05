@@ -67,5 +67,5 @@ Custom proposal distributions can be specified by passing a function to `Metropo
 
 ```julia
 # Set up our sampler with initial parameters.
-spl = MetropolisHastings([0.0, 0.0], x -> MvNormal(x, 0.5))
+spl = MetropolisHastings([0.0, 0.0], MvNormal(2, 0.5)) 
 ```
