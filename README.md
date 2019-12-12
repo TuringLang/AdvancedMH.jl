@@ -21,7 +21,7 @@ density(data, θ) = insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
 data = rand(Normal(0, 1), 30)
 
 # Construct a DensityModel.
-model = DensityModel(density, data)
+model = DensityModel(density)
 
 # Set up our sampler with initial parameters.
 spl = MetropolisHastings([0.0, 0.0])
