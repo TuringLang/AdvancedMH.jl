@@ -11,14 +11,15 @@ AdvancedMH works by accepting some log density function which is used to constru
 ```julia
 # Import the package.
 using AdvancedMH
+using Distributions
+
+# Generate a set of data from the posterior we want to estimate.
+data = rand(Normal(0, 1), 30)
 
 # Define the components of a basic model.
 insupport(θ) = θ[2] >= 0
 dist(θ) = Normal(θ[1], θ[2])
-density(data, θ) = insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
-
-# Generate a set of data from the posterior we want to estimate.
-data = rand(Normal(0, 1), 30)
+density(θ) = insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
 
 # Construct a DensityModel.
 model = DensityModel(density)
@@ -46,19 +47,19 @@ parameters        = μ, σ
 
 Summary Statistics
 
-│ Row │ parameters │ mean     │ std      │ naive_se    │ mcse       │ ess     │ r_hat   │
-│     │ Symbol     │ Float64  │ Float64  │ Float64     │ Float64    │ Any     │ Any     │
-├─────┼────────────┼──────────┼──────────┼─────────────┼────────────┼─────────┼─────────┤
-│ 1   │ μ          │ -0.23908 │ 0.187608 │ 0.00059327  │ 0.00310081 │ 3225.02 │ 1.00003 │
-│ 2   │ σ          │ 0.98903  │ 0.138437 │ 0.000437777 │ 0.00242748 │ 2830.8  │ 1.0003  │
+│ Row │ parameters │ mean      │ std      │ naive_se   │ mcse       │ ess     │ r_hat   │
+│     │ Symbol     │ Float64   │ Float64  │ Float64    │ Float64    │ Any     │ Any     │
+├─────┼────────────┼───────────┼──────────┼────────────┼────────────┼─────────┼─────────┤
+│ 1   │ μ          │ 0.0834188 │ 0.241418 │ 0.00076343 │ 0.00341067 │ 4693.04 │ 1.00008 │
+│ 2   │ σ          │ 1.33116   │ 0.184111 │ 0.00058221 │ 0.00258778 │ 4965.83 │ 1.00001 │
 
 Quantiles
 
-│ Row │ parameters │ 2.5%     │ 25.0%     │ 50.0%     │ 75.0%     │ 97.5%    │
-│     │ Symbol     │ Float64  │ Float64   │ Float64   │ Float64   │ Float64  │
-├─────┼────────────┼──────────┼───────────┼───────────┼───────────┼──────────┤
-│ 1   │ μ          │ -0.61185 │ -0.360519 │ -0.236016 │ -0.119666 │ 0.134902 │
-│ 2   │ σ          │ 0.758477 │ 0.887894  │ 0.973777  │ 1.07983   │ 1.29455  │
+│ Row │ parameters │ 2.5%      │ 25.0%      │ 50.0%     │ 75.0%    │ 97.5%    │
+│     │ Symbol     │ Float64   │ Float64    │ Float64   │ Float64  │ Float64  │
+├─────┼────────────┼───────────┼────────────┼───────────┼──────────┼──────────┤
+│ 1   │ μ          │ -0.393769 │ -0.0771134 │ 0.0801688 │ 0.241162 │ 0.564331 │
+│ 2   │ σ          │ 1.03685   │ 1.2044     │ 1.30992   │ 1.43609  │ 1.75745  │
 ```
 
 ## Custom proposals
