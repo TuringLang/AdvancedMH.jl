@@ -1,10 +1,15 @@
 using Test
 using AdvancedMH
 using Random
+using Distributions
+using Random
 
 @testset "AdvancedMH" begin
+    # Set a seed
+    Random.seed!(1234)
+
     # Generate a set of data from the posterior we want to estimate.
-    data = rand(Normal(5, 3), 30)
+    data = rand(Normal(0, 1), 300)
 
     # Define the components of a basic model.
     insupport(θ) = θ[2] >= 0
