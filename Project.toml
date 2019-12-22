@@ -2,6 +2,13 @@ name = "AdvancedMH"
 uuid = "5b7e9947-ddc0-4b3f-9b55-0d8042f74170"
 version = "0.0.2"
 
+[compat]
+julia="1"
+AbstractMCMC="0.1"
+Distributions="0.21"
+MCMCChains="1, 0.4"
+Reexport="0.2"
+
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
