@@ -4,6 +4,9 @@ AdvancedMH.jl currently provides a robust implementation of random walk Metropol
 
 Further development aims to provide a suite of adaptive Metropolis-Hastings implementations.
 
+Currently there are two sampler types. The first is `RWMH`, which represents random-walk MH sampling, and the second is `StaticMH`, which draws proposals
+from only a prior distribution without incrementing the previous sample.
+
 ## Usage
 
 AdvancedMH works by accepting some log density function which is used to construct a `DensityModel`. The `DensityModel` is then used in a `sample` call.
@@ -25,7 +28,7 @@ density(θ) = insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
 model = DensityModel(density)
 
 # Set up our sampler with initial parameters.
-spl = MetropolisHastings([0.0, 0.0])
+spl = RWMH([0.0, 0.0])
 
 # Sample from the posterior.
 chain = sample(model, spl, 100000; param_names=["μ", "σ"])
@@ -68,5 +71,16 @@ Custom proposal distributions can be specified by passing a distribution to `Met
 
 ```julia
 # Set up our sampler with initial parameters.
-spl = MetropolisHastings([0.0, 0.0], MvNormal(2, 0.5)) 
+spl1 = RWMH([0.0, 0.0], MvNormal(2, 0.5)) 
+spl2 = StaticMH([0.0, 0.0], MvNormal(2, 0.5)) 
+```
+
+## Multithreaded sampling
+
+AdvancedMH.jl implements the interface of [AbstractMCMC](https://github.com/TuringLang/AbstractMCMC.jl/), which means you get multiple chain sampling
+in parallel for free:
+
+```julia
+# Sample 4 chains from the posterior.
+chain = psample(model, RWMH(init_params), 100000, 4; param_names=["μ","σ"])
 ```
