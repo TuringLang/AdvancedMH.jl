@@ -20,12 +20,26 @@ using Random
     model = DensityModel(density)
 
     # Set up our sampler with initial parameters.
-    spl = MetropolisHastings([0.0, 0.0])
+    spl1 = RWMH([0.0, 0.0])
+    spl2 = StaticMH([0.0, 0.0], MvNormal([0.0, 0.0], 1)
 
-    # Sample from the posterior.
-    chain = sample(model, spl, 100000; param_names=["μ", "σ"])
+    @testset "Inference" begin
 
-    # chn_mean ≈ dist_mean atol=atol_v
-    @test mean(chain["μ"].value) ≈ 0.0 atol=0.1
-    @test mean(chain["σ"].value) ≈ 1.0 atol=0.1
+        # Sample from the posterior.
+        chain1 = sample(model, spl1, 100000; param_names=["μ", "σ"])
+        chain2 = sample(model, spl2, 100000; param_names=["μ", "σ"])
+
+        # chn_mean ≈ dist_mean atol=atol_v
+        @test mean(chain1["μ"].value) ≈ 0.0 atol=0.1
+        @test mean(chain1["σ"].value) ≈ 1.0 atol=0.1
+        @test mean(chain2["μ"].value) ≈ 0.0 atol=0.1
+        @test mean(chain2["σ"].value) ≈ 1.0 atol=0.1
+    end
+
+    @testset "psample" begin
+        chain1 = psample(model, spl1, 10000, 4)
+        @test mean(chain1["μ"].value) ≈ 0.0 atol=0.1
+        @test mean(chain1["σ"].value) ≈ 1.0 atol=0.1
+    end
 end
+
