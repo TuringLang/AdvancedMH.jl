@@ -21,7 +21,7 @@ using Random
 
     # Set up our sampler with initial parameters.
     spl1 = RWMH([0.0, 0.0])
-    spl2 = StaticMH([0.0, 0.0], MvNormal([0.0, 0.0], 1)
+    spl2 = StaticMH([0.0, 0.0], MvNormal([0.0, 0.0], 1))
 
     @testset "Inference" begin
 
