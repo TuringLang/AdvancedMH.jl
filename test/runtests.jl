@@ -4,6 +4,7 @@ using Random
 using Distributions
 using Random
 using StructArrays
+using MCMCChains
 
 @testset "AdvancedMH" begin
     # Set a seed

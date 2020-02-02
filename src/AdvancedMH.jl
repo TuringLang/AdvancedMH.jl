@@ -11,7 +11,7 @@ import AbstractMCMC: step!, AbstractSampler, AbstractTransition,
     transition_type, bundle_samples
 
 # Exports
-export MetropolisHastings, DensityModel, sample, psample, RWMH, StaticMH, Proposal
+export MetropolisHastings, DensityModel, sample, psample, RWMH, StaticMH, Proposal, Static, RandomWalk
 
 # Abstract type for MH-style samplers.
 abstract type Metropolis <: AbstractSampler end
