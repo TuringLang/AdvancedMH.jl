@@ -117,7 +117,7 @@ function propose(
     model::DensityModel,
     t
 )
-    p = proposal.proposal 
+    p = proposal.proposal
     return rand(proposal.proposal(t))
 end
 
