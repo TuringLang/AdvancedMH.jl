@@ -7,14 +7,18 @@ using Requires
 using Distributions
 
 # Import specific functions and types to use or overload.
-import AbstractMCMC: step!, AbstractSampler, AbstractTransition, transition_type, bundle_samples
+import AbstractMCMC: step!, AbstractSampler, AbstractTransition, 
+    transition_type, bundle_samples
 
 # Exports
-export MetropolisHastings, DensityModel, sample, psample, RWMH, StaticMH
+export MetropolisHastings, DensityModel, sample, psample, RWMH, StaticMH, Proposal
 
 # Abstract type for MH-style samplers.
 abstract type Metropolis <: AbstractSampler end
 abstract type ProposalStyle end
+
+struct RandomWalk <: ProposalStyle end
+struct Static <: ProposalStyle end
 
 # Define a model type. Stores the log density function and the data to 
 # evaluate the log density on.
@@ -57,7 +61,7 @@ function bundle_samples(
     model::DensityModel, 
     s::Metropolis, 
     N::Integer, 
-    ts::Vector{T}; 
+    ts::Type{Any}; 
     param_names=missing,
     kwargs...
 ) where {ModelType<:AbstractModel, T<:AbstractTransition}
@@ -70,13 +74,13 @@ function bundle_samples(
     s::Metropolis, 
     N::Integer, 
     ts::Vector{T},
-    chain_type::Type{NamedTuple}; 
+    chain_type::Type{Vector{NamedTuple}}; 
     param_names=missing,
     kwargs...
 ) where {ModelType<:AbstractModel, T<:AbstractTransition}
     # Check if we received any parameter names.
     if ismissing(param_names)
-        param_names = ["param_$i" for i in 1:length(s.init_params)]
+        param_names = ["param_$i" for i in 1:length(keys(ts[1].params))]
     else
         # Deepcopy to be thread safe.
         param_names = deepcopy(param_names)
@@ -85,8 +89,8 @@ function bundle_samples(
     push!(param_names, "lp")
 
     # Turn all the transitions into a vector-of-NamedTuple.
-    keys = tuple(Symbol.(param_names)...)
-    nts = [NamedTuple{keys}(tuple(t.params..., t.lp)) for t in ts]
+    ks = tuple(Symbol.(param_names)...)
+    nts = [NamedTuple{ks}(tuple(t.params..., t.lp)) for t in ts]
 
     return nts
 end
@@ -97,8 +101,7 @@ function __init__()
 end
 
 # Include inference methods.
+include("proposal.jl")
 include("mh-core.jl")
-include("rwmh.jl")
-include("staticmh.jl")
 
 end # module AdvancedMH

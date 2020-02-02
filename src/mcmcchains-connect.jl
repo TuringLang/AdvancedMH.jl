@@ -1,4 +1,4 @@
-import MCMCChains: Chains
+import .MCMCChains: Chains
 
 # A basic chains constructor that works with the Transition struct we defined.
 function bundle_samples(

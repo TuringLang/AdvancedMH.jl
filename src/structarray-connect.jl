@@ -11,5 +11,7 @@ function bundle_samples(
     param_names=missing,
     kwargs...
 ) where {ModelType<:AbstractModel, T<:AbstractTransition}
-    return StructArray(bundle_samples(rng, model, s, N, ts, NamedTuple; param_names=param_names, kwargs...))
+    return StructArray(bundle_samples(rng, model, s, N, ts, Vector{NamedTuple}; param_names=param_names, kwargs...))
 end
+
+AbstractMCMC.chainscat(cs::StructArray...) = [cs[i] for i in 1:length(cs)]

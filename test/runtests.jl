@@ -3,6 +3,7 @@ using AdvancedMH
 using Random
 using Distributions
 using Random
+using StructArrays
 
 @testset "AdvancedMH" begin
     # Set a seed
@@ -19,27 +20,59 @@ using Random
     # Construct a DensityModel.
     model = DensityModel(density)
 
-    # Set up our sampler with initial parameters.
-    spl1 = RWMH([0.0, 0.0])
-    spl2 = StaticMH([0.0, 0.0], MvNormal([0.0, 0.0], 1))
-
-    @testset "Inference" begin
+    @testset "StaticMH" begin
+        # Set up our sampler with initial parameters.
+        spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
+        spl2 = StaticMH(MvNormal([0.0, 0.0], 1))
 
         # Sample from the posterior.
-        chain1 = sample(model, spl1, 100000; param_names=["μ", "σ"])
-        chain2 = sample(model, spl2, 100000; param_names=["μ", "σ"])
+        chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
+        chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"])
 
         # chn_mean ≈ dist_mean atol=atol_v
-        @test mean(chain1["μ"].value) ≈ 0.0 atol=0.1
-        @test mean(chain1["σ"].value) ≈ 1.0 atol=0.1
-        @test mean(chain2["μ"].value) ≈ 0.0 atol=0.1
-        @test mean(chain2["σ"].value) ≈ 1.0 atol=0.1
+        @test mean(chain1.μ) ≈ 0.0 atol=0.1
+        @test mean(chain1.σ) ≈ 1.0 atol=0.1
+        @test mean(chain2.μ) ≈ 0.0 atol=0.1
+        @test mean(chain2.σ) ≈ 1.0 atol=0.1
+    end
+
+    @testset "RandomWalk" begin
+        # Set up our sampler with initial parameters.
+        spl1 = RWMH([Normal(0,1), Normal(0, 1)])
+        spl2 = RWMH(MvNormal([0.0, 0.0], 1))
+
+        # Sample from the posterior.
+        chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
+        chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"])
+
+        # chn_mean ≈ dist_mean atol=atol_v
+        @test mean(chain1.μ) ≈ 0.0 atol=0.1
+        @test mean(chain1.σ) ≈ 1.0 atol=0.1
+        @test mean(chain2.μ) ≈ 0.0 atol=0.1
+        @test mean(chain2.σ) ≈ 1.0 atol=0.1
     end
 
     @testset "psample" begin
-        chain1 = psample(model, spl1, 10000, 4; param_names=["μ", "σ"])
+        chain1 = psample(model, spl1, 10000, 4; param_names=["μ", "σ"], chain_type=Chains)
         @test mean(chain1["μ"].value) ≈ 0.0 atol=0.1
         @test mean(chain1["σ"].value) ≈ 1.0 atol=0.1
+    end
+
+    @testset "Proposal styles" begin
+        m1 = DensityModel(x -> logpdf(Normal(x,1), 1.0))
+        m2 = DensityModel(x -> logpdf(Normal(x[1], x[2]), 1.0))
+        m3 = DensityModel(x -> logpdf(Normal(x.a, x.b), 1.0))
+        m4 = DensityModel(x -> logpdf(Normal(x,1), 1.0))
+
+        p1 = Proposal(Static(), Normal(0,1))
+        p2 = Proposal(Static(), [Normal(0,1), InverseGamma(2,3)])
+        p3 = (a=Proposal(Static(), Normal(0,1)), b=Proposal(Static(), InverseGamma(2,3)))
+        p4 = Proposal(Static(), (x=1.0) -> Normal(x, 1))
+
+        c1 = sample(m1, MetropolisHastings(p1), 100; chain_type=Vector{NamedTuple})
+        c2 = sample(m2, MetropolisHastings(p2), 100; chain_type=Vector{NamedTuple})
+        c3 = sample(m3, MetropolisHastings(p3), 100; chain_type=Vector{NamedTuple})
+        c4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Vector{NamedTuple})
     end
 end
 
