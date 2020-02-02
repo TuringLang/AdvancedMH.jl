@@ -4,17 +4,17 @@ AdvancedMH.jl currently provides a robust implementation of random walk Metropol
 
 Further development aims to provide a suite of adaptive Metropolis-Hastings implementations.
 
-Currently there are two sampler types. The first is `RWMH`, which represents random-walk MH sampling, and the second is `StaticMH`, which draws proposals
-from only a prior distribution without incrementing the previous sample.
+AdvancedMH works by allowing users to define composable `Proposal` structs in different formats.
 
 ## Usage
 
-AdvancedMH works by accepting some log density function which is used to construct a `DensityModel`. The `DensityModel` is then used in a `sample` call.
+First, construct a `DensityModel`, which is a wrapper around the log density function for your inference problem. The `DensityModel` is then used in a `sample` call.
 
 ```julia
 # Import the package.
 using AdvancedMH
 using Distributions
+using MCMCChains
 
 # Generate a set of data from the posterior we want to estimate.
 data = rand(Normal(0, 1), 30)
@@ -27,11 +27,11 @@ density(θ) = insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
 # Construct a DensityModel.
 model = DensityModel(density)
 
-# Set up our sampler with initial parameters.
-spl = RWMH([0.0, 0.0])
+# Set up our sampler with a joint multivariate Normal proposal.
+spl = RWMH(MvNormal(2,1))
 
 # Sample from the posterior.
-chain = sample(model, spl, 100000; param_names=["μ", "σ"])
+chain = sample(model, spl, 100000; param_names=["μ", "σ"], chain_type=Chains)
 ```
 
 Output:
@@ -46,34 +46,67 @@ Samples per chain = 100000
 internals         = lp
 parameters        = μ, σ
 
-2-element Array{MCMCChains.ChainDataFrame,1}
+2-element Array{ChainDataFrame,1}
 
 Summary Statistics
 
-│ Row │ parameters │ mean      │ std      │ naive_se   │ mcse       │ ess     │ r_hat   │
-│     │ Symbol     │ Float64   │ Float64  │ Float64    │ Float64    │ Any     │ Any     │
-├─────┼────────────┼───────────┼──────────┼────────────┼────────────┼─────────┼─────────┤
-│ 1   │ μ          │ 0.0834188 │ 0.241418 │ 0.00076343 │ 0.00341067 │ 4693.04 │ 1.00008 │
-│ 2   │ σ          │ 1.33116   │ 0.184111 │ 0.00058221 │ 0.00258778 │ 4965.83 │ 1.00001 │
+│ Row │ parameters │ mean     │ std      │ naive_se    │ mcse       │ ess     │ r_hat   │
+│     │ Symbol     │ Float64  │ Float64  │ Float64     │ Float64    │ Any     │ Any     │
+├─────┼────────────┼──────────┼──────────┼─────────────┼────────────┼─────────┼─────────┤
+│ 1   │ μ          │ 0.156152 │ 0.19963  │ 0.000631285 │ 0.00323033 │ 3911.73 │ 1.00009 │
+│ 2   │ σ          │ 1.07493  │ 0.150111 │ 0.000474693 │ 0.00240317 │ 3707.73 │ 1.00027 │
 
 Quantiles
 
-│ Row │ parameters │ 2.5%      │ 25.0%      │ 50.0%     │ 75.0%    │ 97.5%    │
-│     │ Symbol     │ Float64   │ Float64    │ Float64   │ Float64  │ Float64  │
-├─────┼────────────┼───────────┼────────────┼───────────┼──────────┼──────────┤
-│ 1   │ μ          │ -0.393769 │ -0.0771134 │ 0.0801688 │ 0.241162 │ 0.564331 │
-│ 2   │ σ          │ 1.03685   │ 1.2044     │ 1.30992   │ 1.43609  │ 1.75745  │
+│ Row │ parameters │ 2.5%     │ 25.0%     │ 50.0%    │ 75.0%    │ 97.5%    │
+│     │ Symbol     │ Float64  │ Float64   │ Float64  │ Float64  │ Float64  │
+├─────┼────────────┼──────────┼───────────┼──────────┼──────────┼──────────┤
+│ 1   │ μ          │ -0.23361 │ 0.0297006 │ 0.159139 │ 0.283493 │ 0.558694 │
+│ 2   │ σ          │ 0.828288 │ 0.972682  │ 1.05804  │ 1.16155  │ 1.41349  │
+
 ```
 
-## Custom proposals
+## Proposals
 
-Custom proposal distributions can be specified by passing a distribution to `MetropolisHastings`:
+AdvancedMH offers various methods of defining your inference problem. Behind the scenes, a `MetropolisHastings` sampler simply holds
+some set of `Proposal` structs. AdvancedMH will return posterior samples in the "shape" of the proposal provided -- currently
+supported methods are `Array{Proposal}`, `Proposal`, and `NamedTuple{Proposal}`. For example, proposals can be created as:
 
 ```julia
-# Set up our sampler with initial parameters.
-spl1 = RWMH([0.0, 0.0], MvNormal(2, 0.5)) 
-spl2 = StaticMH([0.0, 0.0], MvNormal(2, 0.5)) 
+# Provide a univariate proposal.
+m1 = DensityModel(x -> logpdf(Normal(x,1), 1.0))
+p1 = Proposal(Static(), Normal(0,1))
+c1 = sample(m1, MetropolisHastings(p1), 100; chain_type=Vector{NamedTuple})
+
+# Draw from a vector of distributions.
+m2 = DensityModel(x -> logpdf(Normal(x[1], x[2]), 1.0))
+p2 = Proposal(Static(), [Normal(0,1), InverseGamma(2,3)])
+c2 = sample(m2, MetropolisHastings(p2), 100; chain_type=Vector{NamedTuple})
+
+# Draw from a `NamedTuple` of distributions.
+m3 = DensityModel(x -> logpdf(Normal(x.a, x.b), 1.0))
+p3 = (a=Proposal(Static(), Normal(0,1)), b=Proposal(Static(), InverseGamma(2,3)))
+c3 = sample(m3, MetropolisHastings(p3), 100; chain_type=Vector{NamedTuple})
+
+# Draw from a functional proposal.
+m4 = DensityModel(x -> logpdf(Normal(x,1), 1.0))
+p4 = Proposal(Static(), (x=1.0) -> Normal(x, 1))
+c4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Vector{NamedTuple})
 ```
+
+## Static vs. Random Walk
+
+Currently there are only two methods of inference available. Static MH simply draws from the prior, with no
+conditioning on the previous sample. Random walk will add the proposal to the previously observed value.
+If you are constructing a `Proposal` by hand, you can determine whether the proposal is `Static` or `RandomWalk` using
+
+```julia
+static_prop = Proposal(Static(), Normal(0,1))
+rw_prop = Proposal(RandomWalk(), Normal(0,1))
+```
+
+Different methods are easily composeable. One parameter can be static and another can be a random walk,
+each of which may be drawn from separate distributions.
 
 ## Multithreaded sampling
 
@@ -82,5 +115,5 @@ in parallel for free:
 
 ```julia
 # Sample 4 chains from the posterior.
-chain = psample(model, RWMH(init_params), 100000, 4; param_names=["μ","σ"])
+chain = psample(model, RWMH(init_params), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
 ```
