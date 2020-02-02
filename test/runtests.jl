@@ -54,6 +54,7 @@ using MCMCChains
     end
 
     @testset "psample" begin
+        spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
         chain1 = psample(model, spl1, 10000, 4; param_names=["μ", "σ"], chain_type=Chains)
         @test mean(chain1["μ"].value) ≈ 0.0 atol=0.1
         @test mean(chain1["σ"].value) ≈ 1.0 atol=0.1
