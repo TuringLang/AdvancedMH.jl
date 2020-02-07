@@ -155,9 +155,14 @@ function step!(
     model::DensityModel,
     spl::MetropolisHastings,
     N::Integer;
+    init_params=nothing,
     kwargs...
 )
-    return propose(spl, model)
+    if init_params === nothing
+        return propose(spl, model)
+    else
+        return Transition(model, init_params)
+    end
 end
 
 # Define the other step functions. Returns a Transition containing
