@@ -78,5 +78,17 @@ using MCMCChains
         c3 = sample(m3, MetropolisHastings(p3), 100; chain_type=Vector{NamedTuple})
         c4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Vector{NamedTuple})
     end
+
+    @testset "Initial parameters" begin
+        # Set up our sampler with initial parameters.
+        spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
+
+        val = [0.4, 1.2]
+
+        # Sample from the posterior.
+        chain1 = sample(model, spl1, 10, init_params = val)
+
+        @test chain1[1].params == val
+    end
 end
 

@@ -29,6 +29,17 @@ The sampler is constructed using
 ```julia
 spl = MetropolisHastings(proposal)
 ```
+
+When using `MetropolisHastings` with the function `sample`, the following keyword
+arguments are allowed:
+
+- `init_params` defines the initial parameterization for your model. If
+none is given, the initial parameters will be drawn from the sampler's proposals.
+- `param_names` is a vector of strings to be assigned to parameters. This is only
+used if `chain_type=Chains`.
+- `chain_type` is the type of chain you would like returned to you. Supported
+types are `chain_type=Chains` if `MCMCChains` is imported, or 
+`chain_type=StructArray` if `StructArrays` is imported.
 """
 mutable struct MetropolisHastings{D} <: Metropolis
     proposal :: D
@@ -155,9 +166,14 @@ function step!(
     model::DensityModel,
     spl::MetropolisHastings,
     N::Integer;
+    init_params=nothing,
     kwargs...
 )
-    return propose(spl, model)
+    if init_params === nothing
+        return propose(spl, model)
+    else
+        return Transition(model, init_params)
+    end
 end
 
 # Define the other step functions. Returns a Transition containing
