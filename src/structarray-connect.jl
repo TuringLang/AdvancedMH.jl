@@ -6,11 +6,11 @@ function bundle_samples(
     model::DensityModel, 
     s::Metropolis, 
     N::Integer, 
-    ts::Vector{T},
+    ts::Vector{<:AbstractTransition},
     chain_type::Type{StructArray}; 
     param_names=missing,
     kwargs...
-) where {ModelType<:AbstractModel, T<:AbstractTransition}
+)
     return StructArray(bundle_samples(rng, model, s, N, ts, Vector{NamedTuple}; param_names=param_names, kwargs...))
 end
 
