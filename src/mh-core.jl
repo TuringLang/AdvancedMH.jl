@@ -161,11 +161,12 @@ end
 # Define the first step! function, which is called at the 
 # beginning of sampling. Return the initial parameter used
 # to define the sampler.
-function step!(
+function AbstractMCMC.step!(
     rng::AbstractRNG,
     model::DensityModel,
     spl::MetropolisHastings,
-    N::Integer;
+    N::Integer,
+    ::Nothing;
     init_params=nothing,
     kwargs...
 )
@@ -179,7 +180,7 @@ end
 # Define the other step functions. Returns a Transition containing
 # either a new proposal (if accepted) or the previous proposal 
 # (if not accepted).
-function step!(
+function AbstractMCMC.step!(
     rng::AbstractRNG,
     model::DensityModel,
     spl::MetropolisHastings,
