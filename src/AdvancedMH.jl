@@ -1,20 +1,21 @@
 module AdvancedMH
 
 # Import the relevant libraries.
-using AbstractMCMC
-using Random
-using Requires
+import AbstractMCMC
 using Distributions
+using Requires
 
-# Import specific functions and types to use or overload.
-import AbstractMCMC: step!, AbstractSampler, AbstractTransition, 
-    transition_type, bundle_samples
+using Random
 
 # Exports
-export MetropolisHastings, DensityModel, sample, psample, RWMH, StaticMH, Proposal, Static, RandomWalk
+export MetropolisHastings, DensityModel, RWMH, StaticMH, Proposal, Static, RandomWalk
+
+# Reexports
+using AbstractMCMC: sample, psample
+export sample, psample
 
 # Abstract type for MH-style samplers.
-abstract type Metropolis <: AbstractSampler end
+abstract type Metropolis <: AbstractMCMC.AbstractSampler end
 abstract type ProposalStyle end
 
 struct RandomWalk <: ProposalStyle end
@@ -34,34 +35,31 @@ l
 DensityModel
 ```
 """
-struct DensityModel{F<:Function} <: AbstractModel
+struct DensityModel{F<:Function} <: AbstractMCMC.AbstractModel
     logdensity :: F
 end
 
 # Create a very basic Transition type, only stores the 
 # parameter draws and the log probability of the draw.
-struct Transition{T<:Union{Vector, Real, NamedTuple}, L<:Real} <: AbstractTransition
+struct Transition{T<:Union{Vector, Real, NamedTuple}, L<:Real}
     params :: T
     lp :: L
 end
 
 # Store the new draw and its log density.
-Transition(model::M, params::T) where {M<:DensityModel, T} = Transition(params, logdensity(model, params))
-
-# Tell the interface what transition type we would like to use.
-transition_type(model::DensityModel, spl::Metropolis) = typeof(Transition(spl.init_params, logdensity(model, spl.init_params)))
+Transition(model::DensityModel, params) = Transition(params, logdensity(model, params))
 
 # Calculate the density of the model given some parameterization.
 logdensity(model::DensityModel, params) = model.logdensity(params)
 logdensity(model::DensityModel, t::Transition) = t.lp
 
 # A basic chains constructor that works with the Transition struct we defined.
-function bundle_samples(
+function AbstractMCMC.bundle_samples(
     rng::AbstractRNG, 
     model::DensityModel, 
     s::Metropolis, 
     N::Integer,
-    ts::Vector{<:AbstractTransition},
+    ts::Vector,
     chain_type::Type{Any}; 
     param_names=missing,
     kwargs...
@@ -69,12 +67,12 @@ function bundle_samples(
     return ts
 end
 
-function bundle_samples(
+function AbstractMCMC.bundle_samples(
     rng::AbstractRNG, 
     model::DensityModel, 
     s::Metropolis, 
     N::Integer, 
-    ts::Vector{<:AbstractTransition},
+    ts::Vector,
     chain_type::Type{Vector{NamedTuple}}; 
     param_names=missing,
     kwargs...

@@ -1,12 +1,12 @@
 import .MCMCChains: Chains
 
 # A basic chains constructor that works with the Transition struct we defined.
-function bundle_samples(
+function AbstractMCMC.bundle_samples(
     rng::AbstractRNG, 
     model::DensityModel, 
     s::Metropolis, 
     N::Integer, 
-    ts::Vector{<:AbstractTransition},
+    ts::Vector,
     chain_type::Type{Chains}; 
     param_names=missing,
     kwargs...
