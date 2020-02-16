@@ -60,11 +60,12 @@ function bundle_samples(
     rng::AbstractRNG, 
     model::DensityModel, 
     s::Metropolis, 
-    N::Integer, 
-    ts::Type{Any}; 
+    N::Integer,
+    ts::Vector{<:AbstractTransition},
+    chain_type::Type{Any}; 
     param_names=missing,
     kwargs...
-) where {ModelType<:AbstractModel, T<:AbstractTransition}
+)
     return ts
 end
 
@@ -73,11 +74,11 @@ function bundle_samples(
     model::DensityModel, 
     s::Metropolis, 
     N::Integer, 
-    ts::Vector{T},
+    ts::Vector{<:AbstractTransition},
     chain_type::Type{Vector{NamedTuple}}; 
     param_names=missing,
     kwargs...
-) where {ModelType<:AbstractModel, T<:AbstractTransition}
+)
     # Check if we received any parameter names.
     if ismissing(param_names)
         param_names = ["param_$i" for i in 1:length(keys(ts[1].params))]

@@ -6,11 +6,11 @@ function bundle_samples(
     model::DensityModel, 
     s::Metropolis, 
     N::Integer, 
-    ts::Vector{T},
+    ts::Vector{<:AbstractTransition},
     chain_type::Type{Chains}; 
     param_names=missing,
     kwargs...
-) where {ModelType<:AbstractModel, T<:AbstractTransition}
+)
     # Turn all the transitions into a vector-of-vectors.
     vals = copy(reduce(hcat,[vcat(t.params, t.lp) for t in ts])')
 
