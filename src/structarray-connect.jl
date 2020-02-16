@@ -14,4 +14,4 @@ function bundle_samples(
     return StructArray(bundle_samples(rng, model, s, N, ts, Vector{NamedTuple}; param_names=param_names, kwargs...))
 end
 
-AbstractMCMC.chainscat(cs::StructArray...) = [cs[i] for i in 1:length(cs)]
+AbstractMCMC.chainscat(c::StructArray, cs::StructArray...) = vcat(c, cs...)
