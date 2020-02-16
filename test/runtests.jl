@@ -1,10 +1,10 @@
-using Test
 using AdvancedMH
-using Random
 using Distributions
-using Random
 using StructArrays
 using MCMCChains
+
+using Random
+using Test
 
 @testset "AdvancedMH" begin
     # Set a seed

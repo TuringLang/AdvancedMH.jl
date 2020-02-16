@@ -1,4 +1,4 @@
-using StructArrays
+import .StructArrays: StructArray
 
 # A basic chains constructor that works with the Transition struct we defined.
 function bundle_samples(
