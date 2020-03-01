@@ -81,7 +81,6 @@ function propose(
     vals = map(interval) do k
         xk = walkers[k]
         xj = walkers[rand(filter(z -> z != k, interval))]
-        xj = walkers[rand(filter(z -> z != k, interval))]
         z = zs[k]
         y = xk.params + z .* (xj.params - xk.params)
         new_params = Transition(model, y)
