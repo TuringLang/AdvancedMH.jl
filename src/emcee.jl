@@ -93,7 +93,6 @@ function propose(
         end
     end
 
-    # display([walkers new_walkers])
     return vals
 end
 
