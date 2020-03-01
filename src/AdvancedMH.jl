@@ -102,5 +102,6 @@ end
 # Include inference methods.
 include("proposal.jl")
 include("mh-core.jl")
+include("emcee.jl")
 
 end # module AdvancedMH
