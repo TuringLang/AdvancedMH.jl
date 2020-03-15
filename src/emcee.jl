@@ -95,12 +95,3 @@ function propose(
 
     return vals
 end
-
-function q(
-    proposal::Proposal{<:Emcee, <:Distribution}, 
-    t,
-    t_cond
-)
-    p = proposal.proposal
-    return sum(logpdf.(p(t_cond), t))
-end
