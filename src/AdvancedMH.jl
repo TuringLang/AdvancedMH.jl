@@ -14,8 +14,8 @@ export MetropolisHastings, DensityModel, RWMH, StaticMH, Proposal, Static, Rando
 using AbstractMCMC: sample, psample
 export sample, psample
 
-# Abstract type for MH-style samplers.
-abstract type Metropolis <: AbstractMCMC.AbstractSampler end
+# Abstract type for MH-style samplers. Needs better name? 
+abstract type AMH <: AbstractMCMC.AbstractSampler end
 abstract type ProposalStyle end
 
 struct RandomWalk <: ProposalStyle end
@@ -57,7 +57,7 @@ logdensity(model::DensityModel, t::Transition) = t.lp
 function AbstractMCMC.bundle_samples(
     rng::AbstractRNG, 
     model::DensityModel, 
-    s::Metropolis, 
+    s::AMH, 
     N::Integer,
     ts::Vector,
     chain_type::Type{Any}; 
@@ -70,7 +70,7 @@ end
 function AbstractMCMC.bundle_samples(
     rng::AbstractRNG, 
     model::DensityModel, 
-    s::Metropolis, 
+    s::AMH, 
     N::Integer, 
     ts::Vector,
     chain_type::Type{Vector{NamedTuple}}; 

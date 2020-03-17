@@ -41,7 +41,7 @@ used if `chain_type=Chains`.
 types are `chain_type=Chains` if `MCMCChains` is imported, or 
 `chain_type=StructArray` if `StructArrays` is imported.
 """
-mutable struct MetropolisHastings{D} <: Metropolis
+mutable struct MetropolisHastings{D} <: AMH
     proposal :: D
 end
 
@@ -185,7 +185,7 @@ function AbstractMCMC.step!(
     model::DensityModel,
     spl::MetropolisHastings,
     ::Integer,
-    params_prev::Transition;
+    params_prev;
     kwargs...
 )
     # Generate a new proposal.
