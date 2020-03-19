@@ -41,8 +41,8 @@ used if `chain_type=Chains`.
 types are `chain_type=Chains` if `MCMCChains` is imported, or 
 `chain_type=StructArray` if `StructArrays` is imported.
 """
-mutable struct MetropolisHastings{D} <: Metropolis
-    proposal :: D
+struct MetropolisHastings{D} <: Metropolis
+    proposal::D
 end
 
 StaticMH(d) = MetropolisHastings(StaticProposal(d))
