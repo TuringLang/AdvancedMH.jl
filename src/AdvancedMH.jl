@@ -8,7 +8,7 @@ using Requires
 using Random
 
 # Exports
-export MetropolisHastings, DensityModel, RWMH, StaticMH, Proposal, Static, RandomWalk
+export MetropolisHastings, DensityModel, RWMH, StaticMH, StaticProposal, RandomWalkProposal
 
 # Reexports
 using AbstractMCMC: sample, psample
@@ -16,10 +16,6 @@ export sample, psample
 
 # Abstract type for MH-style samplers.
 abstract type Metropolis <: AbstractMCMC.AbstractSampler end
-abstract type ProposalStyle end
-
-struct RandomWalk <: ProposalStyle end
-struct Static <: ProposalStyle end
 
 # Define a model type. Stores the log density function and the data to 
 # evaluate the log density on.

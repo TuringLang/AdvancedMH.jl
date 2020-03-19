@@ -12,16 +12,16 @@ x = (a = 1.0, b=3.8)
 The proposal would be
 
 ```julia
-proposal = (a=Proposal(Static(), Normal(0,1)), b=Proposal(Static(), Normal(0,1)))
+proposal = (a=StaticProposal(Normal(0,1)), b=StaticProposal(Normal(0,1)))
 ````
 
-Other allowed proposal styles are
+Other allowed proposals are
 
 ```
-p1 = Proposal(Static(), Normal(0,1))
-p2 = Proposal(Static(), [Normal(0,1), InverseGamma(2,3)])
-p3 = Proposal(Static(), (a=Normal(0,1), b=InverseGamma(2,3)))
-p4 = Proposal(Static(), (x=1.0) -> Normal(x, 1))
+p1 = StaticProposal(Normal(0,1))
+p2 = StaticProposal([Normal(0,1), InverseGamma(2,3)])
+p3 = StaticProposal(a=Normal(0,1), b=InverseGamma(2,3))
+p4 = StaticProposal((x=1.0) -> Normal(x, 1))
 ```
 
 The sampler is constructed using
@@ -45,8 +45,8 @@ mutable struct MetropolisHastings{D} <: Metropolis
     proposal :: D
 end
 
-StaticMH(d) = MetropolisHastings(Proposal(Static(), d))
-RWMH(d) = MetropolisHastings(Proposal(RandomWalk(), d))
+StaticMH(d) = MetropolisHastings(StaticProposal(d))
+RWMH(d) = MetropolisHastings(RandomWalkProposal(d))
 
 # Propose from a vector of proposals
 function propose(
