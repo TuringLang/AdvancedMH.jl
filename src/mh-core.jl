@@ -132,7 +132,10 @@ function q(
     t::Transition,
     t_cond::Transition
 )
-    return sum(map(i -> q(spl.proposal[i], t.params[i], t_cond.params[i]), 1:length(spl.proposal)))
+    # mapreduce with multiple iterators requires Julia 1.2 or later
+    return mapreduce(+, 1:length(spl.proposal)) do i
+        q(spl.proposal[i], t.params[i], t_cond.params[i])
+    end
 end
 
 function q(
@@ -148,14 +151,10 @@ function q(
     t::Transition,
     t_cond::Transition
 )
-    ks = keys(t.params)
-    total = 0.0
-
-    for k in ks
-        total += q(spl.proposal[k], t.params[k], t_cond.params[k])
+    # mapreduce with multiple iterators requires Julia 1.2 or later
+    return mapreduce(+, keys(t.params)) do k
+        q(spl.proposal[k], t.params[k], t_cond.params[k])
     end
-
-    return total
 end
 
 # Define the first step! function, which is called at the 
