@@ -75,22 +75,22 @@ supported methods are `Array{Proposal}`, `Proposal`, and `NamedTuple{Proposal}`.
 ```julia
 # Provide a univariate proposal.
 m1 = DensityModel(x -> logpdf(Normal(x,1), 1.0))
-p1 = Proposal(Static(), Normal(0,1))
+p1 = StaticProposal(Normal(0,1))
 c1 = sample(m1, MetropolisHastings(p1), 100; chain_type=Vector{NamedTuple})
 
 # Draw from a vector of distributions.
 m2 = DensityModel(x -> logpdf(Normal(x[1], x[2]), 1.0))
-p2 = Proposal(Static(), [Normal(0,1), InverseGamma(2,3)])
+p2 = StaticProposal([Normal(0,1), InverseGamma(2,3)])
 c2 = sample(m2, MetropolisHastings(p2), 100; chain_type=Vector{NamedTuple})
 
 # Draw from a `NamedTuple` of distributions.
 m3 = DensityModel(x -> logpdf(Normal(x.a, x.b), 1.0))
-p3 = (a=Proposal(Static(), Normal(0,1)), b=Proposal(Static(), InverseGamma(2,3)))
+p3 = (a=StaticProposal(Normal(0,1)), b=StaticProposal(InverseGamma(2,3)))
 c3 = sample(m3, MetropolisHastings(p3), 100; chain_type=Vector{NamedTuple})
 
 # Draw from a functional proposal.
 m4 = DensityModel(x -> logpdf(Normal(x,1), 1.0))
-p4 = Proposal(Static(), (x=1.0) -> Normal(x, 1))
+p4 = StaticProposal((x=1.0) -> Normal(x, 1))
 c4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Vector{NamedTuple})
 ```
 
@@ -98,11 +98,12 @@ c4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Vector{NamedTuple})
 
 Currently there are only two methods of inference available. Static MH simply draws from the prior, with no
 conditioning on the previous sample. Random walk will add the proposal to the previously observed value.
-If you are constructing a `Proposal` by hand, you can determine whether the proposal is `Static` or `RandomWalk` using
+If you are constructing a `Proposal` by hand, you can determine whether the proposal is a
+`StaticProposal` or a `RandomWalkProposal` using
 
 ```julia
-static_prop = Proposal(Static(), Normal(0,1))
-rw_prop = Proposal(RandomWalk(), Normal(0,1))
+static_prop = StaticProposal(Normal(0,1))
+rw_prop = RandomWalkProposal(Normal(0,1))
 ```
 
 Different methods are easily composeable. One parameter can be static and another can be a random walk,
