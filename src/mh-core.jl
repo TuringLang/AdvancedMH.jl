@@ -53,7 +53,7 @@ function propose(
     spl::MetropolisHastings{<:AbstractArray},
     model::DensityModel
 )
-    proposal = map(i -> propose(spl.proposal[i], model), 1:length(spl.proposal))
+    proposal = map(p -> propose(p, model), spl.proposal)
     return Transition(model, proposal)
 end
 
@@ -62,7 +62,9 @@ function propose(
     model::DensityModel,
     params_prev::Transition
 )
-    proposal = map(i -> propose(spl.proposal[i], model, params_prev.params[i]), 1:length(spl.proposal))
+    proposal = map(spl.proposal, params_prev.params) do p, params
+        propose(p, model, params)
+    end
     return Transition(model, proposal)
 end
 
