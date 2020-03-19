@@ -68,10 +68,10 @@ using Test
         m3 = DensityModel(x -> logpdf(Normal(x.a, x.b), 1.0))
         m4 = DensityModel(x -> logpdf(Normal(x,1), 1.0))
 
-        p1 = Proposal(Static(), Normal(0,1))
-        p2 = Proposal(Static(), [Normal(0,1), InverseGamma(2,3)])
-        p3 = (a=Proposal(Static(), Normal(0,1)), b=Proposal(Static(), InverseGamma(2,3)))
-        p4 = Proposal(Static(), (x=1.0) -> Normal(x, 1))
+        p1 = StaticProposal(Normal(0,1))
+        p2 = StaticProposal([Normal(0,1), InverseGamma(2,3)])
+        p3 = (a=StaticProposal(Normal(0,1)), b=StaticProposal(InverseGamma(2,3)))
+        p4 = StaticProposal((x=1.0) -> Normal(x, 1))
 
         c1 = sample(m1, MetropolisHastings(p1), 100; chain_type=Vector{NamedTuple})
         c2 = sample(m2, MetropolisHastings(p2), 100; chain_type=Vector{NamedTuple})

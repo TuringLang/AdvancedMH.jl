@@ -12,16 +12,16 @@ x = (a = 1.0, b=3.8)
 The proposal would be
 
 ```julia
-proposal = (a=Proposal(Static(), Normal(0,1)), b=Proposal(Static(), Normal(0,1)))
+proposal = (a=StaticProposal(Normal(0,1)), b=StaticProposal(Normal(0,1)))
 ````
 
-Other allowed proposal styles are
+Other allowed proposals are
 
 ```
-p1 = Proposal(Static(), Normal(0,1))
-p2 = Proposal(Static(), [Normal(0,1), InverseGamma(2,3)])
-p3 = Proposal(Static(), (a=Normal(0,1), b=InverseGamma(2,3)))
-p4 = Proposal(Static(), (x=1.0) -> Normal(x, 1))
+p1 = StaticProposal(Normal(0,1))
+p2 = StaticProposal([Normal(0,1), InverseGamma(2,3)])
+p3 = StaticProposal(a=Normal(0,1), b=InverseGamma(2,3))
+p4 = StaticProposal((x=1.0) -> Normal(x, 1))
 ```
 
 The sampler is constructed using
@@ -41,90 +41,81 @@ used if `chain_type=Chains`.
 types are `chain_type=Chains` if `MCMCChains` is imported, or 
 `chain_type=StructArray` if `StructArrays` is imported.
 """
-mutable struct MetropolisHastings{D} <: Metropolis
-    proposal :: D
+struct MetropolisHastings{D} <: Metropolis
+    proposal::D
 end
 
-StaticMH(d) = MetropolisHastings(Proposal(Static(), d))
-RWMH(d) = MetropolisHastings(Proposal(RandomWalk(), d))
+StaticMH(d) = MetropolisHastings(StaticProposal(d))
+RWMH(d) = MetropolisHastings(RandomWalkProposal(d))
+
+# default function without RNG
+propose(spl::MetropolisHastings, args...) = propose(Random.GLOBAL_RNG, spl, args...)
 
 # Propose from a vector of proposals
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:AbstractArray},
     model::DensityModel
 )
-    proposal = map(i -> propose(spl.proposal[i], model), 1:length(spl.proposal))
+    proposal = map(p -> propose(rng, p, model), spl.proposal)
     return Transition(model, proposal)
 end
 
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:AbstractArray},
     model::DensityModel,
     params_prev::Transition
 )
-    proposal = map(i -> propose(spl.proposal[i], model, params_prev.params[i]), 1:length(spl.proposal))
+    proposal = map(spl.proposal, params_prev.params) do p, params
+        propose(rng, p, model, params)
+    end
     return Transition(model, proposal)
 end
 
 # Make a proposal from one Proposal struct.
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:Proposal},
     model::DensityModel
 )
-    proposal = propose(spl.proposal, model)
+    proposal = propose(rng, spl.proposal, model)
     return Transition(model, proposal)
 end
 
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:Proposal},
     model::DensityModel,
     params_prev::Transition
 )
-    proposal = propose(spl.proposal, model, params_prev.params)
+    proposal = propose(rng, spl.proposal, model, params_prev.params)
     return Transition(model, proposal)
 end
 
 # Make a proposal from a NamedTuple of Proposal.
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:NamedTuple},
     model::DensityModel
 )
-    proposal = _propose(spl.proposal, model)
+    proposal = map(spl.proposal) do p
+        propose(rng, p, model)
+    end
     return Transition(model, proposal)
 end
 
-@generated function _propose(
-    proposals::NamedTuple{names},
-    model::DensityModel
-) where {names}
-    expr = Expr(:tuple)
-    map(names) do f
-        push!(expr.args, Expr(:(=), f, :(propose(proposals.$f, model)) ))
-    end
-    return expr
-end
-
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:NamedTuple},
     model::DensityModel,
     params_prev::Transition
 )
-    proposal = _propose(spl.proposal, model, params_prev.params)
+    proposal = map(spl.proposal, params_prev.params) do p, params
+        propose(rng, p, model, params)
+    end
     return Transition(model, proposal)
 end
-
-@generated function _propose(
-    proposals::NamedTuple{names},
-    model::DensityModel, 
-    params_prev::NamedTuple
-) where {names}
-    expr = Expr(:tuple)
-    map(names) do f
-        push!(expr.args, Expr(:(=), f, :(propose(proposals.$f, model, params_prev.$f)) ))
-    end
-    return expr
-end
-
 
 # Evaluate the likelihood of t conditional on t_cond.
 function q(
@@ -132,7 +123,10 @@ function q(
     t::Transition,
     t_cond::Transition
 )
-    return sum(map(i -> q(spl.proposal[i], t.params[i], t_cond.params[i]), 1:length(spl.proposal)))
+    # mapreduce with multiple iterators requires Julia 1.2 or later
+    return mapreduce(+, 1:length(spl.proposal)) do i
+        q(spl.proposal[i], t.params[i], t_cond.params[i])
+    end
 end
 
 function q(
@@ -148,21 +142,17 @@ function q(
     t::Transition,
     t_cond::Transition
 )
-    ks = keys(t.params)
-    total = 0.0
-
-    for k in ks
-        total += q(spl.proposal[k], t.params[k], t_cond.params[k])
+    # mapreduce with multiple iterators requires Julia 1.2 or later
+    return mapreduce(+, keys(t.params)) do k
+        q(spl.proposal[k], t.params[k], t_cond.params[k])
     end
-
-    return total
 end
 
 # Define the first step! function, which is called at the 
 # beginning of sampling. Return the initial parameter used
 # to define the sampler.
 function AbstractMCMC.step!(
-    rng::AbstractRNG,
+    rng::Random.AbstractRNG,
     model::DensityModel,
     spl::MetropolisHastings,
     N::Integer,
@@ -171,7 +161,7 @@ function AbstractMCMC.step!(
     kwargs...
 )
     if init_params === nothing
-        return propose(spl, model)
+        return propose(rng, spl, model)
     else
         return Transition(model, init_params)
     end
@@ -181,7 +171,7 @@ end
 # either a new proposal (if accepted) or the previous proposal 
 # (if not accepted).
 function AbstractMCMC.step!(
-    rng::AbstractRNG,
+    rng::Random.AbstractRNG,
     model::DensityModel,
     spl::MetropolisHastings,
     ::Integer,
@@ -189,14 +179,14 @@ function AbstractMCMC.step!(
     kwargs...
 )
     # Generate a new proposal.
-    params = propose(spl, model, params_prev)
+    params = propose(rng, spl, model, params_prev)
 
     # Calculate the log acceptance probability.
-    α = logdensity(model, params) - logdensity(model, params_prev) + 
+    logα = logdensity(model, params) - logdensity(model, params_prev) + 
         q(spl, params_prev, params) - q(spl, params, params_prev)
 
     # Decide whether to return the previous params or the new one.
-    if log(rand(rng)) < min(0.0, α)
+    if -Random.randexp(rng) < logα
         return params
     else
         return params_prev
