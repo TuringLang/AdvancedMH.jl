@@ -89,19 +89,10 @@ function propose(
     spl::MetropolisHastings{<:NamedTuple},
     model::DensityModel
 )
-    proposal = _propose(spl.proposal, model)
-    return Transition(model, proposal)
-end
-
-@generated function _propose(
-    proposals::NamedTuple{names},
-    model::DensityModel
-) where {names}
-    expr = Expr(:tuple)
-    map(names) do f
-        push!(expr.args, Expr(:(=), f, :(propose(proposals.$f, model)) ))
+    proposal = map(spl.proposal) do p
+        propose(p, model)
     end
-    return expr
+    return Transition(model, proposal)
 end
 
 function propose(
@@ -109,22 +100,11 @@ function propose(
     model::DensityModel,
     params_prev::Transition
 )
-    proposal = _propose(spl.proposal, model, params_prev.params)
+    proposal = map(spl.proposal, params_prev.params) do p, params
+        propose(p, model, params)
+    end
     return Transition(model, proposal)
 end
-
-@generated function _propose(
-    proposals::NamedTuple{names},
-    model::DensityModel, 
-    params_prev::NamedTuple
-) where {names}
-    expr = Expr(:tuple)
-    map(names) do f
-        push!(expr.args, Expr(:(=), f, :(propose(proposals.$f, model, params_prev.$f)) ))
-    end
-    return expr
-end
-
 
 # Evaluate the likelihood of t conditional on t_cond.
 function q(
