@@ -48,62 +48,71 @@ end
 StaticMH(d) = MetropolisHastings(StaticProposal(d))
 RWMH(d) = MetropolisHastings(RandomWalkProposal(d))
 
+# default function without RNG
+propose(spl::MetropolisHastings, args...) = propose(Random.GLOBAL_RNG, spl, args...)
+
 # Propose from a vector of proposals
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:AbstractArray},
     model::DensityModel
 )
-    proposal = map(p -> propose(p, model), spl.proposal)
+    proposal = map(p -> propose(rng, p, model), spl.proposal)
     return Transition(model, proposal)
 end
 
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:AbstractArray},
     model::DensityModel,
     params_prev::Transition
 )
     proposal = map(spl.proposal, params_prev.params) do p, params
-        propose(p, model, params)
+        propose(rng, p, model, params)
     end
     return Transition(model, proposal)
 end
 
 # Make a proposal from one Proposal struct.
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:Proposal},
     model::DensityModel
 )
-    proposal = propose(spl.proposal, model)
+    proposal = propose(rng, spl.proposal, model)
     return Transition(model, proposal)
 end
 
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:Proposal},
     model::DensityModel,
     params_prev::Transition
 )
-    proposal = propose(spl.proposal, model, params_prev.params)
+    proposal = propose(rng, spl.proposal, model, params_prev.params)
     return Transition(model, proposal)
 end
 
 # Make a proposal from a NamedTuple of Proposal.
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:NamedTuple},
     model::DensityModel
 )
     proposal = map(spl.proposal) do p
-        propose(p, model)
+        propose(rng, p, model)
     end
     return Transition(model, proposal)
 end
 
 function propose(
+    rng::Random.AbstractRNG,
     spl::MetropolisHastings{<:NamedTuple},
     model::DensityModel,
     params_prev::Transition
 )
     proposal = map(spl.proposal, params_prev.params) do p, params
-        propose(p, model, params)
+        propose(rng, p, model, params)
     end
     return Transition(model, proposal)
 end
@@ -143,7 +152,7 @@ end
 # beginning of sampling. Return the initial parameter used
 # to define the sampler.
 function AbstractMCMC.step!(
-    rng::AbstractRNG,
+    rng::Random.AbstractRNG,
     model::DensityModel,
     spl::MetropolisHastings,
     N::Integer,
@@ -152,7 +161,7 @@ function AbstractMCMC.step!(
     kwargs...
 )
     if init_params === nothing
-        return propose(spl, model)
+        return propose(rng, spl, model)
     else
         return Transition(model, init_params)
     end
@@ -162,7 +171,7 @@ end
 # either a new proposal (if accepted) or the previous proposal 
 # (if not accepted).
 function AbstractMCMC.step!(
-    rng::AbstractRNG,
+    rng::Random.AbstractRNG,
     model::DensityModel,
     spl::MetropolisHastings,
     ::Integer,
@@ -170,7 +179,7 @@ function AbstractMCMC.step!(
     kwargs...
 )
     # Generate a new proposal.
-    params = propose(spl, model, params_prev)
+    params = propose(rng, spl, model, params_prev)
 
     # Calculate the log acceptance probability.
     logα = logdensity(model, params) - logdensity(model, params_prev) + 

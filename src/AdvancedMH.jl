@@ -5,7 +5,7 @@ import AbstractMCMC
 using Distributions
 using Requires
 
-using Random
+import Random
 
 # Exports
 export MetropolisHastings, DensityModel, RWMH, StaticMH, StaticProposal, RandomWalkProposal
@@ -51,7 +51,7 @@ logdensity(model::DensityModel, t::Transition) = t.lp
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
-    rng::AbstractRNG, 
+    rng::Random.AbstractRNG, 
     model::DensityModel, 
     s::Metropolis, 
     N::Integer,
@@ -64,7 +64,7 @@ function AbstractMCMC.bundle_samples(
 end
 
 function AbstractMCMC.bundle_samples(
-    rng::AbstractRNG, 
+    rng::Random.AbstractRNG, 
     model::DensityModel, 
     s::Metropolis, 
     N::Integer, 

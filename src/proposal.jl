@@ -9,8 +9,11 @@ struct RandomWalkProposal{P} <: Proposal{P}
 end
 
 # Random draws
-Base.rand(p::Proposal{<:Distribution}) = rand(p.proposal)
-Base.rand(p::Proposal{<:AbstractArray}) = map(rand, p.proposal)
+Base.rand(p::Proposal, args...) = rand(Random.GLOBAL_RNG, p, args...)
+Base.rand(rng::Random.AbstractRNG, p::Proposal{<:Distribution}) = rand(rng, p.proposal)
+function Base.rand(rng::Random.AbstractRNG, p::Proposal{<:AbstractArray})
+    return map(x -> rand(rng, x), p.proposal)
+end
 
 # Densities
 Distributions.logpdf(p::Proposal{<:Distribution}, v) = logpdf(p.proposal, v)
@@ -23,16 +26,17 @@ end
 # Random Walk #
 ###############
 
-function propose(p::RandomWalkProposal, m::DensityModel)
-    return propose(StaticProposal(p.proposal), m)
+function propose(rng::Random.AbstractRNG, p::RandomWalkProposal, m::DensityModel)
+    return propose(rng, StaticProposal(p.proposal), m)
 end
 
 function propose(
+    rng::Random.AbstractRNG,
     proposal::RandomWalkProposal{<:Union{Distribution,AbstractArray}}, 
     model::DensityModel, 
     t
 )
-    return t + rand(proposal)
+    return t + rand(rng, proposal)
 end
 
 function q(
@@ -48,11 +52,12 @@ end
 ##########
 
 function propose(
+    rng::Random.AbstractRNG,
     proposal::StaticProposal{<:Union{Distribution,AbstractArray}},
     model::DensityModel,
     t=nothing
 )
-    return rand(proposal)
+    return rand(rng, proposal)
 end
 
 function q(
@@ -76,18 +81,20 @@ for T in (StaticProposal, RandomWalkProposal)
 end
 
 function propose(
+    rng::Random.AbstractRNG,
     proposal::Proposal{<:Function},
     model::DensityModel
 )
-    return propose(proposal(), model)
+    return propose(rng, proposal(), model)
 end
 
 function propose(
+    rng::Random.AbstractRNG,
     proposal::Proposal{<:Function}, 
     model::DensityModel,
     t
 )
-    return propose(proposal(t), model)
+    return propose(rng, proposal(t), model)
 end
 
 function q(
