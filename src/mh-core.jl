@@ -41,7 +41,7 @@ used if `chain_type=Chains`.
 types are `chain_type=Chains` if `MCMCChains` is imported, or 
 `chain_type=StructArray` if `StructArrays` is imported.
 """
-mutable struct MetropolisHastings{D} <: AMH
+mutable struct MetropolisHastings{D} <: MHSampler
     proposal :: D
 end
 

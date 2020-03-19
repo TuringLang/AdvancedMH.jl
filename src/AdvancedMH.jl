@@ -15,7 +15,7 @@ using AbstractMCMC: sample, psample
 export sample, psample
 
 # Abstract type for MH-style samplers. Needs better name? 
-abstract type AMH <: AbstractMCMC.AbstractSampler end
+abstract type MHSampler <: AbstractMCMC.AbstractSampler end
 abstract type ProposalStyle end
 
 struct RandomWalk <: ProposalStyle end
@@ -57,7 +57,7 @@ logdensity(model::DensityModel, t::Transition) = t.lp
 function AbstractMCMC.bundle_samples(
     rng::Random.AbstractRNG, 
     model::DensityModel, 
-    s::AMH, 
+    s::MHSampler, 
     N::Integer,
     ts::Vector,
     chain_type::Type{Any}; 
@@ -70,7 +70,7 @@ end
 function AbstractMCMC.bundle_samples(
     rng::Random.AbstractRNG, 
     model::DensityModel, 
-    s::AMH, 
+    s::MHSampler, 
     N::Integer, 
     ts::Vector,
     chain_type::Type{Vector{NamedTuple}}; 

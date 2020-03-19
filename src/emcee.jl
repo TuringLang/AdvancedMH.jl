@@ -1,4 +1,4 @@
-struct Ensemble{D} <: AMH
+struct Ensemble{D} <: MHSampler
     n_walkers::Int
     proposal::D
 end
@@ -134,19 +134,16 @@ function move(
     nu = rand(proposal.type.ellipse)
 
     u = rand()
-    y = walker.lp + log(u)
+    y = walker.lp - Random.randexp()
 
-    theta_min = 0.0
-    theta_max = 2.0*π
-    theta = rand(Uniform(theta_min, theta_max))
+    theta = 2 * π * rand()
 
     theta_min = theta - 2.0*π
     theta_max = theta
     
     f = walker.params
     while true
-        ctheta = cos(theta)
-        stheta = sin(theta)
+        stheta, ctheta = sincos(theta)
 
         f_prime = f .* ctheta + nu .* stheta
 
@@ -161,7 +158,7 @@ function move(
                 theta_max = theta
             end
 
-            theta = rand(Uniform(theta_min, theta_max))
+            theta = theta_min + (theta_max - theta_min) * rand()
         end
     end 
 end
@@ -193,11 +190,9 @@ function move(
     walker = move(subspl, model, walker, other_walker)
 
     u = rand()
-    y = walker.lp + log(u)
+    y = walker.lp - Random.randexp()
 
-    theta_min = 0.0
-    theta_max = 2.0*π
-    theta = rand(Uniform(theta_min, theta_max))
+    theta = 2 * π * rand()
 
     theta_min = theta - 2.0*π
     theta_max = theta
@@ -208,15 +203,9 @@ function move(
     while true
         i += 1
         
-        ctheta = cos(theta)
-        stheta = sin(theta)
+        stheta, ctheta = sincos(theta)
         
         f_prime = f .* ctheta + nu .* stheta
-
-        if i >100
-            @warn "Rejecting slice sample"
-            return walker
-        end
 
         new_walker = Walker(model, f_prime)
 
@@ -231,7 +220,7 @@ function move(
                 theta_max = theta
             end
 
-            theta = rand(Uniform(theta_min, theta_max))
+            theta = theta_min + (theta_max - theta_min) * rand()
         end
     end 
 end

@@ -4,7 +4,7 @@ import .MCMCChains: Chains
 function AbstractMCMC.bundle_samples(
     rng::Random.AbstractRNG, 
     model::DensityModel, 
-    s::AMH, 
+    s::MHSampler, 
     N::Integer, 
     ts::Vector{Transition},
     chain_type::Type{Chains}; 
@@ -32,7 +32,7 @@ end
 function AbstractMCMC.bundle_samples(
     rng::AbstractRNG, 
     model::DensityModel, 
-    s::AMH, 
+    s::MHSampler, 
     N::Integer, 
     ts::Vector{<:EmceeTransition},
     chain_type::Type{Chains}; 
