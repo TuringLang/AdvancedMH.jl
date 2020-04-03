@@ -1,7 +1,7 @@
 module AdvancedMH
 
 # Import the relevant libraries.
-import AbstractMCMC
+using AbstractMCMC
 using Distributions
 using Requires
 
@@ -11,8 +11,7 @@ import Random
 export MetropolisHastings, DensityModel, RWMH, StaticMH, StaticProposal, RandomWalkProposal
 
 # Reexports
-using AbstractMCMC: sample, psample
-export sample, psample
+export sample, MCMCThreads, MCMCDistributed
 
 # Abstract type for MH-style samplers.
 abstract type Metropolis <: AbstractMCMC.AbstractSampler end
