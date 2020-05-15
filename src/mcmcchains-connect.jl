@@ -100,5 +100,5 @@ function AbstractMCMC.bundle_samples(
     push!(param_names, "lp", "iteration", "walker")
 
     # Bundle everything up and return a Chains struct.
-    return Chains(vals, param_names, (internals=["lp", "iteration", "walker"],), sorted=true)
+    return Chains(vals, param_names, (internals=["lp", "iteration", "walker"],))
 end

@@ -41,8 +41,8 @@ used if `chain_type=Chains`.
 types are `chain_type=Chains` if `MCMCChains` is imported, or 
 `chain_type=StructArray` if `StructArrays` is imported.
 """
-mutable struct MetropolisHastings{D} <: MHSampler
-    proposal :: D
+struct MetropolisHastings{D} <: MHSampler
+    proposal::D
 end
 
 StaticMH(d) = MetropolisHastings(StaticProposal(d))
@@ -207,7 +207,7 @@ function AbstractMCMC.step!(
         + q(spl, params_prev, params) - q(spl, params, params_prev)
 
     # Decide whether to return the previous params or the new one.
-    if log(rand(rng)) < logα
+    if -Random.randexp(rng) < logα
         return params
     else
         return params_prev

@@ -3,14 +3,6 @@ struct Ensemble{D} <: MHSampler
     proposal::D
 end
 
-struct Walker{T<:Union{Vector,Real,NamedTuple},L<:Real}
-    params::T
-    lp::L
-end
-
-Walker(t::Transition) = Walker(t.params, t.lp)
-Walker(model::DensityModel, params) = Walker(params, logdensity(model, params))
-
 # Define the first step! function, which is called at the 
 # beginning of sampling. Return the initial parameter used
 # to define the sampler.
@@ -24,7 +16,7 @@ function AbstractMCMC.step!(
     kwargs...,
 )
     if init_params === nothing
-        return propose(spl, model)
+        return propose(rng, spl, model)
     else
         return Transition(model, init_params)
     end
@@ -42,17 +34,17 @@ function AbstractMCMC.step!(
     kwargs...,
 )
     # Generate a new proposal. Accept/reject happens at proposal level.
-    return propose(spl, model, params_prev)
+    return propose(rng, spl, model, params_prev)
 end
 
 #
 # Initial proposal
 # 
-function propose(spl::Ensemble, model::DensityModel)
+function propose(rng::Random.AbstractRNG, spl::Ensemble, model::DensityModel)
     # Make the first proposal with a static draw from the prior.
     static_prop = StaticProposal(spl.proposal.proposal)
     mh_spl = MetropolisHastings(static_prop)
-    return map(x -> Walker(propose(mh_spl, model)), 1:spl.n_walkers)
+    return [propose(rng, mh_spl, model) for _ in 1:spl.n_walkers]
 end
 
 
@@ -60,14 +52,18 @@ end
 #
 # Every other proposal
 # 
-function propose(spl::Ensemble, model::DensityModel, walkers::Vector{W}) where {W<:Walker}
+function propose(rng::Random.AbstractRNG, spl::Ensemble, model::DensityModel, walkers::Vector{W}) where {W<:Transition}
     new_walkers = Vector{W}(undef, spl.n_walkers)
     interval = 1:spl.n_walkers
 
+
+    nwalkers = spl.n_walkers
+    others = 1:(nwalkers - 1)
     for i in interval
         walker = walkers[i]
-        other_walker = rand(walkers[interval.!=i])
-        new_walkers[i] = move(spl, model, walker, other_walker)
+        idx = mod1(i + rand(rng, others), nwalkers)
+        other_walker = walkers[idx]
+        new_walkers[i] = move(rng, spl, model, walker, other_walker)
     end
 
     return new_walkers
@@ -85,29 +81,29 @@ end
 StretchProposal(p) = StretchProposal(p, 2.0)
 
 function move(
-    # spl::Ensemble,
+    rng::Random.AbstractRNG, 
     spl::Ensemble{<:StretchProposal},
     model::DensityModel,
-    walker::Walker,
-    other_walker::Walker,
+    walker::Transition,
+    other_walker::Transition,
 )
     # Calculate intermediate values
     proposal = spl.proposal
     n = length(walker.params)
     a = proposal.stretch_length
-    z = ((a - 1.0) * rand() + 1.0)^2.0 / a
+    z = ((a - 1) * rand(rng) + 1)^2 / a
     alphamult = (n - 1) * log(z)
 
     # Make new parameters
     y = walker.params + z .* (other_walker.params - walker.params)
 
     # Construct a new walker
-    new_walker = Walker(model, y)
+    new_walker = Transition(model, y)
 
     # Calculate accept/reject value.
     alpha = alphamult + new_walker.lp - walker.lp
 
-    if alpha >= log(rand())
+    if -Random.randexp(rng) <= alpha
         return new_walker
     else
         return walker
@@ -126,8 +122,8 @@ end
 #     # spl::Ensemble,
 #     spl::Ensemble{Proposal{T,P}},
 #     model::DensityModel,
-#     walker::Walker,
-#     other_walker::Walker,
+#     walker::Transition,
+#     other_walker::Transition,
 # ) where {T<:EllipticalSlice,P}
 #     # Calculate intermediate values
 #     proposal = spl.proposal
@@ -148,7 +144,7 @@ end
 
 #         f_prime = f .* ctheta + nu .* stheta
 
-#         new_walker = Walker(model, f_prime)
+#         new_walker = Transition(model, f_prime)
 
 #         if new_walker.lp > y
 #             return new_walker
@@ -178,8 +174,8 @@ end
 #     # spl::Ensemble,
 #     spl::Ensemble{Proposal{T,P}},
 #     model::DensityModel,
-#     walker::Walker,
-#     other_walker::Walker,
+#     walker::Transition,
+#     other_walker::Transition,
 # ) where {T<:EllipticalSliceStretch,P}
 #     # Calculate intermediate values
 #     proposal = spl.proposal
@@ -208,7 +204,7 @@ end
         
 #         f_prime = f .* ctheta + nu .* stheta
 
-#         new_walker = Walker(model, f_prime)
+#         new_walker = Transition(model, f_prime)
 
 #         # @info "Slice step" i f f_prime y new_walker.lp theta theta_max theta_min
 
