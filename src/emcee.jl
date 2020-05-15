@@ -15,7 +15,7 @@ Walker(model::DensityModel, params) = Walker(params, logdensity(model, params))
 # beginning of sampling. Return the initial parameter used
 # to define the sampler.
 function AbstractMCMC.step!(
-    rng::AbstractRNG,
+    rng::Random.AbstractRNG,
     model::DensityModel,
     spl::Ensemble,
     N::Integer,
@@ -34,7 +34,7 @@ end
 # either a new proposal (if accepted) or the previous proposal 
 # (if not accepted).
 function AbstractMCMC.step!(
-    rng::AbstractRNG,
+    rng::Random.AbstractRNG,
     model::DensityModel,
     spl::Ensemble,
     ::Integer,
@@ -50,7 +50,7 @@ end
 # 
 function propose(spl::Ensemble, model::DensityModel)
     # Make the first proposal with a static draw from the prior.
-    static_prop = Proposal(Static(), spl.proposal.proposal)
+    static_prop = StaticProposal(spl.proposal.proposal)
     mh_spl = MetropolisHastings(static_prop)
     return map(x -> Walker(propose(mh_spl, model)), 1:spl.n_walkers)
 end
@@ -77,23 +77,24 @@ end
 #####################################
 # Basic stretch move implementation #
 #####################################
-struct Stretch{F<:AbstractFloat} <: ProposalStyle
+struct StretchProposal{P, F<:AbstractFloat} <: Proposal{P}
+    proposal :: P
     stretch_length::F
 end
 
-Stretch() = Stretch(2.0)
+StretchProposal(p) = StretchProposal(p, 2.0)
 
 function move(
     # spl::Ensemble,
-    spl::Ensemble{Proposal{T,P}},
+    spl::Ensemble{<:StretchProposal},
     model::DensityModel,
     walker::Walker,
     other_walker::Walker,
-) where {T<:Stretch,P}
+)
     # Calculate intermediate values
     proposal = spl.proposal
     n = length(walker.params)
-    a = proposal.type.stretch_length
+    a = proposal.stretch_length
     z = ((a - 1.0) * rand() + 1.0)^2.0 / a
     alphamult = (n - 1) * log(z)
 
@@ -115,112 +116,112 @@ end
 
 #########################
 # Elliptical slice step #
-#########################
+# #########################
 
-struct EllipticalSlice{E} <: ProposalStyle
-    ellipse::E
-end
+# struct EllipticalSlice{E} <: ProposalStyle
+#     ellipse::E
+# end
 
-function move(
-    # spl::Ensemble,
-    spl::Ensemble{Proposal{T,P}},
-    model::DensityModel,
-    walker::Walker,
-    other_walker::Walker,
-) where {T<:EllipticalSlice,P}
-    # Calculate intermediate values
-    proposal = spl.proposal
-    n = length(walker.params)
-    nu = rand(proposal.type.ellipse)
+# function move(
+#     # spl::Ensemble,
+#     spl::Ensemble{Proposal{T,P}},
+#     model::DensityModel,
+#     walker::Walker,
+#     other_walker::Walker,
+# ) where {T<:EllipticalSlice,P}
+#     # Calculate intermediate values
+#     proposal = spl.proposal
+#     n = length(walker.params)
+#     nu = rand(proposal.type.ellipse)
 
-    u = rand()
-    y = walker.lp - Random.randexp()
+#     u = rand()
+#     y = walker.lp - Random.randexp()
 
-    theta = 2 * π * rand()
+#     theta = 2 * π * rand()
 
-    theta_min = theta - 2.0*π
-    theta_max = theta
+#     theta_min = theta - 2.0*π
+#     theta_max = theta
     
-    f = walker.params
-    while true
-        stheta, ctheta = sincos(theta)
+#     f = walker.params
+#     while true
+#         stheta, ctheta = sincos(theta)
 
-        f_prime = f .* ctheta + nu .* stheta
+#         f_prime = f .* ctheta + nu .* stheta
 
-        new_walker = Walker(model, f_prime)
+#         new_walker = Walker(model, f_prime)
 
-        if new_walker.lp > y
-            return new_walker
-        else
-            if theta < 0 
-                theta_min = theta
-            else
-                theta_max = theta
-            end
+#         if new_walker.lp > y
+#             return new_walker
+#         else
+#             if theta < 0 
+#                 theta_min = theta
+#             else
+#                 theta_max = theta
+#             end
 
-            theta = theta_min + (theta_max - theta_min) * rand()
-        end
-    end 
-end
+#             theta = theta_min + (theta_max - theta_min) * rand()
+#         end
+#     end 
+# end
 
 #####################
 # Slice and stretch #
 #####################
-struct EllipticalSliceStretch{E, S<:Stretch} <: ProposalStyle
-    ellipse::E
-    stretch::S
-end
+# struct EllipticalSliceStretch{E, S<:Stretch} <: ProposalStyle
+#     ellipse::E
+#     stretch::S
+# end
 
-EllipticalSliceStretch(e) = EllipticalSliceStretch(e, Stretch(2.0))
+# EllipticalSliceStretch(e) = EllipticalSliceStretch(e, Stretch(2.0))
 
-function move(
-    # spl::Ensemble,
-    spl::Ensemble{Proposal{T,P}},
-    model::DensityModel,
-    walker::Walker,
-    other_walker::Walker,
-) where {T<:EllipticalSliceStretch,P}
-    # Calculate intermediate values
-    proposal = spl.proposal
-    n = length(walker.params)
-    nu = rand(proposal.type.ellipse)
+# function move(
+#     # spl::Ensemble,
+#     spl::Ensemble{Proposal{T,P}},
+#     model::DensityModel,
+#     walker::Walker,
+#     other_walker::Walker,
+# ) where {T<:EllipticalSliceStretch,P}
+#     # Calculate intermediate values
+#     proposal = spl.proposal
+#     n = length(walker.params)
+#     nu = rand(proposal.type.ellipse)
 
-    # Calculate stretch step first
-    subspl = Ensemble(spl.n_walkers, Proposal(proposal.type.stretch, proposal.proposal))
-    walker = move(subspl, model, walker, other_walker)
+#     # Calculate stretch step first
+#     subspl = Ensemble(spl.n_walkers, Proposal(proposal.type.stretch, proposal.proposal))
+#     walker = move(subspl, model, walker, other_walker)
 
-    u = rand()
-    y = walker.lp - Random.randexp()
+#     u = rand()
+#     y = walker.lp - Random.randexp()
 
-    theta = 2 * π * rand()
+#     theta = 2 * π * rand()
 
-    theta_min = theta - 2.0*π
-    theta_max = theta
+#     theta_min = theta - 2.0*π
+#     theta_max = theta
     
-    f = walker.params
+#     f = walker.params
 
-    i = 0
-    while true
-        i += 1
+#     i = 0
+#     while true
+#         i += 1
         
-        stheta, ctheta = sincos(theta)
+#         stheta, ctheta = sincos(theta)
         
-        f_prime = f .* ctheta + nu .* stheta
+#         f_prime = f .* ctheta + nu .* stheta
 
-        new_walker = Walker(model, f_prime)
+#         new_walker = Walker(model, f_prime)
 
-        # @info "Slice step" i f f_prime y new_walker.lp theta theta_max theta_min
+#         # @info "Slice step" i f f_prime y new_walker.lp theta theta_max theta_min
 
-        if new_walker.lp > y
-            return new_walker
-        else
-            if theta < 0 
-                theta_min = theta
-            else
-                theta_max = theta
-            end
+#         if new_walker.lp > y
+#             return new_walker
+#         else
+#             if theta < 0 
+#                 theta_min = theta
+#             else
+#                 theta_max = theta
+#             end
 
-            theta = theta_min + (theta_max - theta_min) * rand()
-        end
-    end 
-end
+#             theta = theta_min + (theta_max - theta_min) * rand()
+#         end
+#     end 
+# end
