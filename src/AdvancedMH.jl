@@ -15,10 +15,6 @@ export sample, MCMCThreads, MCMCDistributed
 
 # Abstract type for MH-style samplers. Needs better name? 
 abstract type MHSampler <: AbstractMCMC.AbstractSampler end
-abstract type ProposalStyle end
-
-struct RandomWalk <: ProposalStyle end
-struct Static <: ProposalStyle end
 
 # Define a model type. Stores the log density function and the data to 
 # evaluate the log density on.
