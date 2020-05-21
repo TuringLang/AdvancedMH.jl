@@ -203,8 +203,8 @@ function AbstractMCMC.step!(
     params = propose(rng, spl, model, params_prev)
 
     # Calculate the log acceptance probability.
-    logα = logdensity(model, params) - logdensity(model, params_prev) 
-        + q(spl, params_prev, params) - q(spl, params, params_prev)
+    logα = logdensity(model, params) - logdensity(model, params_prev) +
+        q(spl, params_prev, params) - q(spl, params, params_prev)
 
     # Decide whether to return the previous params or the new one.
     if -Random.randexp(rng) < logα
