@@ -47,21 +47,16 @@ function propose(rng::Random.AbstractRNG, spl::Ensemble, model::DensityModel)
     return [propose(rng, mh_spl, model) for _ in 1:spl.n_walkers]
 end
 
-
-
 #
 # Every other proposal
 # 
 function propose(rng::Random.AbstractRNG, spl::Ensemble, model::DensityModel, walkers::Vector{W}) where {W<:Transition}
-    new_walkers = Vector{W}(undef, spl.n_walkers)
-    interval = 1:spl.n_walkers
+    new_walkers = similar(walkers)
 
-
-    nwalkers = spl.n_walkers
-    others = 1:(nwalkers - 1)
-    for i in interval
+    others = 1:(spl.n_walkers - 1)
+    for i in 1:spl.n_walkers
         walker = walkers[i]
-        idx = mod1(i + rand(rng, others), nwalkers)
+        idx = mod1(i + rand(rng, others), spl.n_walkers)
         other_walker = walkers[idx]
         new_walkers[i] = move(rng, spl, model, walker, other_walker)
     end
@@ -95,7 +90,7 @@ function move(
     alphamult = (n - 1) * log(z)
 
     # Make new parameters
-    y = walker.params + z .* (other_walker.params - walker.params)
+    y = @. walker.params + z * (other_walker.params - walker.params)
 
     # Construct a new walker
     new_walker = Transition(model, y)

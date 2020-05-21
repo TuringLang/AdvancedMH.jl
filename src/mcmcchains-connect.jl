@@ -39,17 +39,20 @@ function AbstractMCMC.bundle_samples(
     param_names=missing,
     kwargs...
 )
-    # return ts
-    vals = mapreduce(
-        t -> map(i -> vcat(ts[t][i].params, 
-                 ts[t][i].lp, t, i),
-                 1:length(ts[t])), 
-        vcat, 
-        1:length(ts))
-    
-    vals = Array(reduce(hcat, vals)')
+    # Preallocate return array
+    # NOTE: requires constant dimensionality.
+    n_params = length(ts[1][1].params)
+    vals = Array{Float64, 3}(undef, N, n_params + 1, s.n_walkers)  # add 1 parameter for lp
 
-    # return vals
+    for n in 1:N
+        for i in 1:s.n_walkers
+            walker = ts[n][i]
+            for j in 1:n_params
+                vals[n, j, i] = walker.params[j]
+            end
+            vals[n, n_params + 1, i] = walker.lp
+        end
+    end
 
     # Check if we received any parameter names.
     if ismissing(param_names)
@@ -60,8 +63,8 @@ function AbstractMCMC.bundle_samples(
     end
 
     # Add the log density field to the parameter names.
-    push!(param_names, "lp", "iteration", "walker")
+    push!(param_names, "lp")
 
     # Bundle everything up and return a Chains struct.
-    return Chains(vals, param_names, (internals=["lp", "iteration", "walker"],))
+    return Chains(vals, param_names, (internals=["lp"],))
 end

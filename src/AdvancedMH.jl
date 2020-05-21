@@ -8,7 +8,8 @@ using Requires
 import Random
 
 # Exports
-export MetropolisHastings, DensityModel, RWMH, StaticMH, StaticProposal, RandomWalkProposal
+export MetropolisHastings, DensityModel, RWMH, StaticMH, StaticProposal, 
+    RandomWalkProposal, Ensemble, StretchProposal
 
 # Reexports
 export sample, MCMCThreads, MCMCDistributed
