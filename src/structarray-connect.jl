@@ -4,7 +4,7 @@ import .StructArrays: StructArray
 function AbstractMCMC.bundle_samples(
     rng::Random.AbstractRNG, 
     model::DensityModel, 
-    s::Metropolis, 
+    s::MHSampler, 
     N::Integer, 
     ts::Vector,
     chain_type::Type{StructArray}; 

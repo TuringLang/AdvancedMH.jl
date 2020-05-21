@@ -8,13 +8,14 @@ using Requires
 import Random
 
 # Exports
-export MetropolisHastings, DensityModel, RWMH, StaticMH, StaticProposal, RandomWalkProposal
+export MetropolisHastings, DensityModel, RWMH, StaticMH, StaticProposal, 
+    RandomWalkProposal, Ensemble, StretchProposal
 
 # Reexports
 export sample, MCMCThreads, MCMCDistributed
 
-# Abstract type for MH-style samplers.
-abstract type Metropolis <: AbstractMCMC.AbstractSampler end
+# Abstract type for MH-style samplers. Needs better name? 
+abstract type MHSampler <: AbstractMCMC.AbstractSampler end
 
 # Define a model type. Stores the log density function and the data to 
 # evaluate the log density on.
@@ -52,7 +53,7 @@ logdensity(model::DensityModel, t::Transition) = t.lp
 function AbstractMCMC.bundle_samples(
     rng::Random.AbstractRNG, 
     model::DensityModel, 
-    s::Metropolis, 
+    s::MHSampler, 
     N::Integer,
     ts::Vector,
     chain_type::Type{Any}; 
@@ -65,7 +66,7 @@ end
 function AbstractMCMC.bundle_samples(
     rng::Random.AbstractRNG, 
     model::DensityModel, 
-    s::Metropolis, 
+    s::MHSampler, 
     N::Integer, 
     ts::Vector,
     chain_type::Type{Vector{NamedTuple}}; 
@@ -97,5 +98,6 @@ end
 # Include inference methods.
 include("proposal.jl")
 include("mh-core.jl")
+include("emcee.jl")
 
 end # module AdvancedMH
