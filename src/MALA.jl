@@ -28,7 +28,7 @@ function propose(
     rng::Random.AbstractRNG,
     spl::MALA{<:Proposal},
     model::DensityModel,
-    params_prev::Transition_w∇
+    params_prev::GradientTransition
 )
     proposal = propose(rng, spl.proposal(params_prev.∇), model, params_prev.params)
     return Transition_w∇(model, proposal)
