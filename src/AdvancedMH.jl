@@ -9,7 +9,7 @@ import Random
 
 # Exports
 export MetropolisHastings, DensityModel, RWMH, StaticMH, StaticProposal, 
-    RandomWalkProposal, Ensemble, StretchProposal
+    RandomWalkProposal, Ensemble, StretchProposal, MALAMH, MALA
 
 # Reexports
 export sample, MCMCThreads, MCMCDistributed
@@ -99,5 +99,6 @@ end
 include("proposal.jl")
 include("mh-core.jl")
 include("emcee.jl")
+include("MALA.jl")
 
 end # module AdvancedMH

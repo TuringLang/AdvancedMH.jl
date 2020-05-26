@@ -4,7 +4,9 @@ version = "0.5.0"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
+DiffResults = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 
