@@ -37,10 +37,10 @@ end
 
 function q(
     spl::MALA{<:Proposal},
-    t::Transition_w∇,
-    t_cond::Transition_w∇
+    t::GradientTransition,
+    t_cond::GradientTransition
 )
-    return q(spl.proposal(-t_cond.∇), t.params, t_cond.params)
+    return q(spl.proposal(-t_cond.gradient), t.params, t_cond.params)
 end
 
 
