@@ -74,7 +74,7 @@ function AbstractMCMC.step!(
     if init_params === nothing
         @warn "need init_params"
     else
-        return Transition_w∇(model, init_params)
+        return GradientTransition(model, init_params)
     end
 end
 
