@@ -6,7 +6,11 @@ struct MALA{D} <: MHSampler
 end
 
 
-MALAMH(d) = MALA(RandomWalkProposal(d))
+# Create a RandomWalkProposal if we weren't given one already.
+MALA(d) = MALA(RandomWalkProposal(d))
+
+# If we were given a RandomWalkProposal, just use that instead.
+MALA(d::RandomWalkProposal) = MALA{typeof(d)}(d)
 
 
 struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}}
