@@ -21,7 +21,7 @@ end
 
 
 # Store the new draw, its log density and its gradient
-Transition_w∇(model::DensityModel, params) = Transition_w∇(params, ∂ℓπ∂θ(model, params)...)
+GradientTransition(model::DensityModel, params) = GradientTransition(params, ∂ℓπ∂θ(model, params)...)
 
 
 function propose(
