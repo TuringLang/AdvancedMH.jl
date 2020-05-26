@@ -30,8 +30,8 @@ function propose(
     model::DensityModel,
     params_prev::GradientTransition
 )
-    proposal = propose(rng, spl.proposal(params_prev.∇), model, params_prev.params)
-    return Transition_w∇(model, proposal)
+    proposal = propose(rng, spl.proposal(params_prev.gradient), model, params_prev.params)
+    return GradientTransition(model, proposal)
 end
 
 
