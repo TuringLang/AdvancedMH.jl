@@ -9,7 +9,7 @@ end
 MALAMH(d) = MALA(RandomWalkProposal(d))
 
 
-struct Transition_w∇{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}}
+struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}}
     params :: T
     lp :: L
     ∇ :: G
