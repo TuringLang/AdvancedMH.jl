@@ -56,7 +56,7 @@ function ∂ℓπ∂θ(model::DensityModel, params)
 end
 
 
-logdensity(model::DensityModel, t::Transition_w∇) = t.lp
+logdensity(model::DensityModel, t::GradientTransition) = t.lp
 
 
 # Define the first step! function, which is called at the 
