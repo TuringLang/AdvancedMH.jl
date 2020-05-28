@@ -97,5 +97,7 @@ using Test
 
         @test chain1[1].params == val
     end
+
+    @testset "EMCEE" begin include("emcee.jl") end
 end
 
