@@ -90,7 +90,7 @@ function move(
     alphamult = (n - 1) * log(z)
 
     # Make new parameters
-    y = @. walker.params + z * (other_walker.params - walker.params)
+    y = @. other_walker.params + z * (walker.params - other_walker.params)
 
     # Construct a new walker
     new_walker = Transition(model, y)
