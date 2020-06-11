@@ -20,8 +20,8 @@
             chain = sample(model, sampler, 1_000;
                            param_names = ["s", "m"], chain_type = Chains)
 
-            @test mean(chain["s"].value) ≈ 49/24 atol=0.1
-            @test mean(chain["m"].value) ≈ 7/6 atol=0.1
+            @test mean(chain["s"]) ≈ 49/24 atol=0.1
+            @test mean(chain["m"]) ≈ 7/6 atol=0.1
         end
 
         @testset "transformed space" begin
@@ -45,8 +45,8 @@
             chain = sample(model, sampler, 1_000;
                            param_names = ["logs", "m"], chain_type = Chains)
 
-            @test mean(exp.(chain["logs"].value)) ≈ 49/24 atol=0.1
-            @test mean(chain["m"].value) ≈ 7/6 atol=0.1
+            @test mean(exp, chain["logs"]) ≈ 49/24 atol=0.1
+            @test mean(chain["m"]) ≈ 7/6 atol=0.1
         end
     end
 end

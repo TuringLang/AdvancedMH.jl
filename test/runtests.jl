@@ -58,14 +58,14 @@ using Test
 
         chain1 = sample(model, spl1, MCMCDistributed(), 10000, 4;
                         param_names=["μ", "σ"], chain_type=Chains)
-        @test mean(chain1["μ"].value) ≈ 0.0 atol=0.1
-        @test mean(chain1["σ"].value) ≈ 1.0 atol=0.1
+        @test mean(chain1["μ"]) ≈ 0.0 atol=0.1
+        @test mean(chain1["σ"]) ≈ 1.0 atol=0.1
 
         if VERSION >= v"1.3"
             chain2 = sample(model, spl1, MCMCThreads(), 10000, 4;
                             param_names=["μ", "σ"], chain_type=Chains)
-            @test mean(chain2["μ"].value) ≈ 0.0 atol=0.1
-            @test mean(chain2["σ"].value) ≈ 1.0 atol=0.1
+            @test mean(chain2["μ"]) ≈ 0.0 atol=0.1
+            @test mean(chain2["σ"]) ≈ 1.0 atol=0.1
         end
     end
 
