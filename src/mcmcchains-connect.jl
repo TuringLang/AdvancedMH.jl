@@ -2,12 +2,11 @@ import .MCMCChains: Chains
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
-    rng::Random.AbstractRNG, 
-    model::DensityModel, 
-    s::MHSampler, 
-    N::Integer, 
-    ts,
-    chain_type::Type{Chains}; 
+    ts::Vector{<:Transition},
+    model::DensityModel,
+    sampler::MHSampler,
+    state,
+    chain_type::Type{Chains};
     param_names=missing,
     kwargs...
 )
@@ -16,7 +15,7 @@ function AbstractMCMC.bundle_samples(
 
     # Check if we received any parameter names.
     if ismissing(param_names)
-        param_names = [Symbol(:param_, i) for i in 1:length(s.init_params)]
+        param_names = [Symbol(:param_, i) for i in 1:length(keys(ts[1].params))]
     else
         # Generate new array to be thread safe.
         param_names = Symbol.(param_names)
@@ -30,22 +29,23 @@ function AbstractMCMC.bundle_samples(
 end
 
 function AbstractMCMC.bundle_samples(
-    rng::Random.AbstractRNG, 
-    model::DensityModel, 
-    s::Ensemble, 
-    N::Integer, 
-    ts::Vector,
-    chain_type::Type{Chains}; 
+    ts::Vector{<:Vector{<:Transition}},
+    model::DensityModel,
+    sampler::Ensemble,
+    state,
+    chain_type::Type{Chains};
     param_names=missing,
     kwargs...
 )
     # Preallocate return array
     # NOTE: requires constant dimensionality.
     n_params = length(ts[1][1].params)
-    vals = Array{Float64, 3}(undef, N, n_params + 1, s.n_walkers)  # add 1 parameter for lp
+    nsamples = length(ts)
+    # add 1 parameter for lp
+    vals = Array{Float64, 3}(undef, nsamples, n_params + 1, sampler.n_walkers)
 
-    for n in 1:N
-        for i in 1:s.n_walkers
+    for n in 1:nsamples
+        for i in 1:sampler.n_walkers
             walker = ts[n][i]
             for j in 1:n_params
                 vals[n, j, i] = walker.params[j]
@@ -56,7 +56,7 @@ function AbstractMCMC.bundle_samples(
 
     # Check if we received any parameter names.
     if ismissing(param_names)
-        param_names = [Symbol(:param_, i) for i in 1:length(ts[1][1].params)]
+        param_names = [Symbol(:param_, i) for i in 1:length(keys(ts[1][1].params))]
     else
         # Generate new array to be thread safe.
         param_names = Symbol.(param_names)
