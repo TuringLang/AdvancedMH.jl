@@ -35,7 +35,7 @@ struct DensityModel{F<:Function} <: AbstractMCMC.AbstractModel
     logdensity :: F
 end
 
-# Create a very basic Transition type, only stores the 
+# Create a very basic Transition type, only stores the
 # parameter draws and the log probability of the draw.
 struct Transition{T<:Union{Vector, Real, NamedTuple}, L<:Real}
     params :: T
@@ -51,25 +51,11 @@ logdensity(model::DensityModel, t::Transition) = t.lp
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
-    rng::Random.AbstractRNG, 
-    model::DensityModel, 
-    s::MHSampler, 
-    N::Integer,
-    ts::Vector,
-    chain_type::Type{Any}; 
-    param_names=missing,
-    kwargs...
-)
-    return ts
-end
-
-function AbstractMCMC.bundle_samples(
-    rng::Random.AbstractRNG, 
-    model::DensityModel, 
-    s::MHSampler, 
-    N::Integer, 
-    ts::Vector,
-    chain_type::Type{Vector{NamedTuple}}; 
+    ts::Vector{<:Transition},
+    model::DensityModel,
+    sampler::MHSampler,
+    state,
+    chain_type::Type{Vector{NamedTuple}};
     param_names=missing,
     kwargs...
 )

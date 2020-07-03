@@ -169,34 +169,34 @@ function q(
     end
 end
 
-# Define the first step! function, which is called at the 
-# beginning of sampling. Return the initial parameter used
-# to define the sampler.
-function AbstractMCMC.step!(
+# Define the first sampling step.
+# Return a 2-tuple consisting of the initial sample and the initial state.
+# In this case they are identical.
+function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModel,
-    spl::MetropolisHastings,
-    N::Integer,
-    ::Nothing;
+    spl::MetropolisHastings;
     init_params=nothing,
     kwargs...
 )
     if init_params === nothing
-        return propose(rng, spl, model)
+        transition = propose(rng, spl, model)
     else
-        return Transition(model, init_params)
+        transition = Transition(model, init_params)
     end
+
+    return transition, transition
 end
 
-# Define the other step functions. Returns a Transition containing
-# either a new proposal (if accepted) or the previous proposal 
-# (if not accepted).
-function AbstractMCMC.step!(
+# Define the other sampling steps.
+# Return a 2-tuple consisting of the next sample and the the next state.
+# In this case they are identical, and either a new proposal (if accepted)
+# or the previous proposal (if not accepted).
+function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModel,
     spl::MetropolisHastings,
-    ::Integer,
-    params_prev;
+    params_prev::Transition;
     kwargs...
 )
     # Generate a new proposal.
@@ -208,8 +208,8 @@ function AbstractMCMC.step!(
 
     # Decide whether to return the previous params or the new one.
     if -Random.randexp(rng) < logα
-        return params
+        return params, params
     else
-        return params_prev
+        return params_prev, params_prev
     end
 end
