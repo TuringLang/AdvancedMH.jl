@@ -84,7 +84,7 @@ function AbstractMCMC.bundle_samples(
     chain_type::Type{Vector{NamedTuple}};
     param_names=missing,
     kwargs...
-) where {T<:NamedTuple, L}
+)
     # If the element type of ts is NamedTuples, just use the names in the
     # struct.
 
