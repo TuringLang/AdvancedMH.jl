@@ -77,7 +77,7 @@ function AbstractMCMC.bundle_samples(
 end
 
 function AbstractMCMC.bundle_samples(
-    ts::Vector{Transition{T, L}},
+    ts::Vector{<:Transition{<:NamedTuple}},
     model::DensityModel,
     sampler::MHSampler,
     state,
