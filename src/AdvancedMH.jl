@@ -51,7 +51,7 @@ logdensity(model::DensityModel, t::Transition) = t.lp
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
-    ts::Vector{Transition{T, L}},
+    ts::Vector{<:Transition},
     model::DensityModel,
     sampler::MHSampler,
     state,
