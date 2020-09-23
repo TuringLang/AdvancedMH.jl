@@ -58,7 +58,7 @@ function AbstractMCMC.bundle_samples(
     chain_type::Type{Vector{NamedTuple}};
     param_names=missing,
     kwargs...
-) where {T, L}
+)
     # Check if we received any parameter names.
     if ismissing(param_names)
         param_names = ["param_$i" for i in 1:length(keys(ts[1].params))]
