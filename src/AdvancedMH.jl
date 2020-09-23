@@ -51,29 +51,39 @@ logdensity(model::DensityModel, t::Transition) = t.lp
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
-    ts::Vector{<:Transition},
+    ts::Vector{Transition{T, L}},
     model::DensityModel,
     sampler::MHSampler,
     state,
     chain_type::Type{Vector{NamedTuple}};
     param_names=missing,
     kwargs...
-)
-    # Check if we received any parameter names.
-    if ismissing(param_names)
-        param_names = ["param_$i" for i in 1:length(keys(ts[1].params))]
+) where {T, L}
+    # If the element type of ts is NamedTuples, just use those names:
+    if T <: NamedTuple
+        # Extract NamedTuples
+        nts = map(x -> merge(x.params, (lp=x.lp,)), ts)
+
+        # Return em'
+        return nts
     else
-        # Deepcopy to be thread safe.
-        param_names = deepcopy(param_names)
+        # Otherwise, default to heuristics to infer parameter names.
+        # Check if we received any parameter names.
+        if ismissing(param_names)
+            param_names = ["param_$i" for i in 1:length(keys(ts[1].params))]
+        else
+            # Deepcopy to be thread safe.
+            param_names = deepcopy(param_names)
+        end
+
+        push!(param_names, "lp")
+
+        # Turn all the transitions into a vector-of-NamedTuple.
+        ks = tuple(Symbol.(param_names)...)
+        nts = [NamedTuple{ks}(tuple(t.params..., t.lp)) for t in ts]
+
+        return nts
     end
-
-    push!(param_names, "lp")
-
-    # Turn all the transitions into a vector-of-NamedTuple.
-    ks = tuple(Symbol.(param_names)...)
-    nts = [NamedTuple{ks}(tuple(t.params..., t.lp)) for t in ts]
-
-    return nts
 end
 
 function __init__()
