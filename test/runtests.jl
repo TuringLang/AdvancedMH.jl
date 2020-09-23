@@ -84,6 +84,11 @@ using Test
         c2 = sample(m2, MetropolisHastings(p2), 100; chain_type=Vector{NamedTuple})
         c3 = sample(m3, MetropolisHastings(p3), 100; chain_type=Vector{NamedTuple})
         c4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Vector{NamedTuple})
+
+        @test keys(c1[1]) == (:param_1, :lp)
+        @test keys(c2[1]) == (:param_1, :param_2, :lp)
+        @test keys(c3[1]) == (:a, :b, :lp)
+        @test keys(c4[1]) == (:param_1, :lp)
     end
 
     @testset "Initial parameters" begin

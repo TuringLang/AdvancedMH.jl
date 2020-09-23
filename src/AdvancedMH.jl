@@ -76,6 +76,25 @@ function AbstractMCMC.bundle_samples(
     return nts
 end
 
+function AbstractMCMC.bundle_samples(
+    ts::Vector{<:Transition{<:NamedTuple}},
+    model::DensityModel,
+    sampler::MHSampler,
+    state,
+    chain_type::Type{Vector{NamedTuple}};
+    param_names=missing,
+    kwargs...
+)
+    # If the element type of ts is NamedTuples, just use the names in the
+    # struct.
+
+    # Extract NamedTuples
+    nts = map(x -> merge(x.params, (lp=x.lp,)), ts)
+
+    # Return em'
+    return nts
+end
+
 function __init__()
     @require MCMCChains="c7f686f2-ff18-58e9-bc7b-31028e88f75d" include("mcmcchains-connect.jl")
     @require StructArrays="09ab397b-f2b6-538f-b94a-2f83cf4a842a" include("structarray-connect.jl")
