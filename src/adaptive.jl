@@ -59,7 +59,7 @@ function propose(
     t
 )
     consider_adaptation!(proposal) 
-    t + rand(rng, proposal.proposal)
+    return t + rand(rng, proposal.proposal)
 end
 
 function q(proposal::AdaptiveProposal, t, t_cond) 
