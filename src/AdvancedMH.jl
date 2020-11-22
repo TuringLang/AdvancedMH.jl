@@ -104,5 +104,6 @@ end
 include("proposal.jl")
 include("mh-core.jl")
 include("emcee.jl")
+include("adaptive.jl")
 
 end # module AdvancedMH

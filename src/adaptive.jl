@@ -26,6 +26,11 @@ julia>  p = AdaptiveProposal(Uniform(-0.2, 0.2));
 julia> rand(p)
 0.07975590594518434
 ```
+
+# References 
+
+Roberts, Gareth O., and Jeffrey S. Rosenthal. "Examples of adaptive MCMC."
+Journal of Computational and Graphical Statistics 18.2 (2009): 349-367.
 """
 mutable struct AdaptiveProposal{P} <: Proposal{P}
     proposal::P
@@ -64,7 +69,7 @@ function consider_adaptation!(p)
     p.adaptor.total += 1
 end
 
-function adapt!(p)
+function adapt!(p::AdaptiveProposal)
     a = p.adaptor
     a.total == 0 && return 
     δ  = min(a.δmax, 1. /√(a.total/a.tune))  # diminishing adaptation

@@ -69,6 +69,15 @@ using Test
         @test mean(chain2.σ) ≈ 1.0 atol=0.1
     end
 
+    @testset "Compare adaptive to simple random walk" begin
+        data = rand(Normal(2., 1.), 500)
+        m1 = DensityModel(x -> loglikelihood(Normal(x,1), data))
+        p1 = RandomWalkProposal(Normal())
+        p2 = AdaptiveProposal(Normal())
+        c1 = sample(m1, MetropolisHastings(p1), 10000; chain_type=Chains)
+        c2 = sample(m1, MetropolisHastings(p2), 10000; chain_type=Chains)         
+    end
+
     @testset "parallel sampling" begin
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
 
