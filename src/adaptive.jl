@@ -7,8 +7,9 @@ mutable struct Adaptor
     δmax::Float64     # maximum adaptation step
 end
 
-Adaptor(; tune=25, target=0.44, bound=10., δmax=0.2) =
-    Adaptor(0, 0, tune, target, bound, δmax)
+function Adaptor(; tune=25, target=0.44, bound=10., δmax=0.2)
+    return Adaptor(0, 0, tune, target, bound, δmax)
+end
 
 """
     AdaptiveProposal{P} 
