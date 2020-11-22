@@ -76,6 +76,7 @@ using Test
         p2 = AdaptiveProposal(Normal())
         c1 = sample(m1, MetropolisHastings(p1), 10000; chain_type=Chains)
         c2 = sample(m1, MetropolisHastings(p2), 10000; chain_type=Chains)         
+        @test ess(c2).nt.ess > ess(c1).nt.ess
     end
 
     @testset "parallel sampling" begin
