@@ -9,7 +9,7 @@ import Random
 
 # Exports
 export MetropolisHastings, DensityModel, RWMH, StaticMH, StaticProposal, 
-    RandomWalkProposal, Ensemble, StretchProposal
+    RandomWalkProposal, Ensemble, StretchProposal, AdaptiveProposal
 
 # Reexports
 export sample, MCMCThreads, MCMCDistributed
