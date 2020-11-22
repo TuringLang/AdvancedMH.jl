@@ -1,10 +1,10 @@
 mutable struct Adaptor
     accepted::Integer
-    total   ::Integer
-    tune    ::Integer   # tuning interval
-    target  ::Float64   # target acceptance rate
-    bound   ::Float64   # bound on logσ of Gaussian kernel
-    δmax    ::Float64   # maximum adaptation step
+    total::Integer
+    tune::Integer     # tuning interval
+    target::Float64   # target acceptance rate
+    bound::Float64    # bound on logσ of Gaussian kernel
+    δmax::Float64     # maximum adaptation step
 end
 
 Adaptor(; tune=25, target=0.44, bound=10., δmax=0.2) =
@@ -90,4 +90,3 @@ function adapted(d::Uniform, δ, bound=Inf)
     σ  = abs(lσ) > bound ? exp(sign(lσ) * bound) : exp(lσ)
     Uniform(-σ, σ)
 end
-
