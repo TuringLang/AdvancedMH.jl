@@ -84,7 +84,7 @@ end
 function adapted(d::Normal, δ, bound=Inf)
     lσ = log(d.σ) + δ
     lσ = abs(lσ) > bound ? sign(lσ) * bound : lσ
-    Normal(d.μ, exp(lσ))
+    return Normal(d.μ, exp(lσ))
 end
 
 function adapted(d::Uniform, δ, bound=Inf)
