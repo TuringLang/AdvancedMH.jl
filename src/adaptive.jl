@@ -46,8 +46,9 @@ accepted!(p::Vector{<:AdaptiveProposal}) = map(accepted!, p)
 accepted!(p::NamedTuple{names}) where names = map(x->accepted!(getfield(p, x)), names)
 
 # this is defined because the first draw has no transition yet (I think)
-propose(rng::Random.AbstractRNG, p::AdaptiveProposal, m::DensityModel) = 
-    rand(rng, p.proposal)
+function propose(rng::Random.AbstractRNG, p::AdaptiveProposal, m::DensityModel)
+    return rand(rng, p.proposal)
+end
 
 # the actual proposal happens here
 function propose(
