@@ -63,7 +63,7 @@ function propose(
 end
 
 function q(proposal::AdaptiveProposal, t, t_cond) 
-    logpdf(proposal, t - t_cond)
+    return logpdf(proposal, t - t_cond)
 end
 
 function consider_adaptation!(p)
