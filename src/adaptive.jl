@@ -34,7 +34,7 @@ Journal of Computational and Graphical Statistics 18.2 (2009): 349-367.
 """
 mutable struct AdaptiveProposal{P} <: Proposal{P}
     proposal::P
-    adaptor ::Adaptor
+    adaptor::Adaptor
 end
 
 function AdaptiveProposal(p; kwargs...) 
