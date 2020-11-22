@@ -39,7 +39,7 @@ mutable struct AdaptiveProposal{P} <: Proposal{P}
 end
 
 function AdaptiveProposal(p; kwargs...) 
-    AdaptiveProposal(p, Adaptor(; kwargs...))
+    return AdaptiveProposal(p, Adaptor(; kwargs...))
 end
 
 accepted!(p::AdaptiveProposal) = p.adaptor.accepted += 1
