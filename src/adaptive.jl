@@ -82,8 +82,8 @@ function adapt!(p::AdaptiveProposal)
 end
 
 function adapted(d::Normal, δ, bound=Inf)
-    lσ = log(d.σ) + δ
-    lσ = abs(lσ) > bound ? sign(lσ) * bound : lσ
+    _lσ = log(d.σ) + δ
+    lσ = sign(_lσ) * min(bound, abs(_lσ))
     return Normal(d.μ, exp(lσ))
 end
 
