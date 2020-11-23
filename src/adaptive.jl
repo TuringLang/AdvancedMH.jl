@@ -1,7 +1,20 @@
+"""
+    Adaptor(; tune=25, target=0.44, bound=10., δmax=0.2)
+
+A helper struct for univariate adaptive proposal kernels. This tracks the
+number of accepted proposals and the total number of attempted proposals.  The
+proposal kernel is tuned every `tune` proposals, such that the scale (log(σ) in
+the case of a Normal kernel, log(b) for a Uniform kernel) of the proposal is
+increased (decreased) by `δ(n) = min(δmax, 1/√n)` at tuning step `n` if the
+estimated acceptance probability is higher (lower) than `target`. The target
+acceptance probability defaults to 0.44 which is supposedly optimal for 1D
+proposals. To ensure ergodicity, the scale of the proposal has to be bounded
+(by `bound`), although this is often not required in practice.
+"""
 mutable struct Adaptor
-    accepted::Integer
-    total::Integer
-    tune::Integer     # tuning interval
+    accepted::Int
+    total::Int
+    tune::Int         # tuning interval
     target::Float64   # target acceptance rate
     bound::Float64    # bound on logσ of Gaussian kernel
     δmax::Float64     # maximum adaptation step
