@@ -17,7 +17,7 @@ using Test
     insupport(θ) = θ[2] >= 0
     dist(θ) = Normal(θ[1], θ[2])
     
-    # using the let statement prevents surprises when data gets redefined
+    # using `let` prevents surprises when data is redefined in some testset
     density = let data = data
         θ -> insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
     end
