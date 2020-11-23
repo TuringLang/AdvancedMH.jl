@@ -89,6 +89,6 @@ end
 
 function adapted(d::Uniform, δ, bound=Inf)
     lσ = log(d.b) + δ
-    σ  = abs(lσ) > bound ? exp(sign(lσ) * bound) : exp(lσ)
+    σ  = exp(sign(lσ) * min(bound, abs(lσ)))
     return Uniform(-σ, σ)
 end
