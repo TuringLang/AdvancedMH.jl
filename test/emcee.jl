@@ -18,7 +18,7 @@
             Random.seed!(100)
             sampler = Ensemble(1_000, StretchProposal([InverseGamma(2, 3), Normal(0, 1)]))
             chain = sample(model, sampler, 1_000;
-                           param_names = ["s", "m"], chain_type = Chains)
+                           param_names = ["s", "m"], chain_type = Chains, progress = false)
 
             @test mean(chain["s"]) ≈ 49/24 atol=0.1
             @test mean(chain["m"]) ≈ 7/6 atol=0.1
@@ -43,7 +43,7 @@
             Random.seed!(100)
             sampler = Ensemble(1_000, StretchProposal(MvNormal(2, 1)))
             chain = sample(model, sampler, 1_000;
-                           param_names = ["logs", "m"], chain_type = Chains)
+                           param_names = ["logs", "m"], chain_type = Chains, progress = false)
 
             @test mean(exp, chain["logs"]) ≈ 49/24 atol=0.1
             @test mean(chain["m"]) ≈ 7/6 atol=0.1
