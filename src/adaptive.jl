@@ -74,7 +74,7 @@ end
 function adapt!(p::AdaptiveProposal)
     a = p.adaptor
     a.total == 0 && return 
-    δ  = min(a.δmax, 1. /√(a.total/a.tune))  # diminishing adaptation
+    δ  = min(a.δmax, sqrt(a.tune / a.total))  # diminishing adaptation
     α  = a.accepted / a.tune  # acceptance ratio
     p_ = adapted(p.proposal, α > a.target ? δ : -δ, a.bound) 
     a.accepted = 0 
