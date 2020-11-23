@@ -11,7 +11,7 @@ using Test
     Random.seed!(1234)
 
     # Generate a set of data from the posterior we want to estimate.
-    data = rand(Normal(0., 1), 300)
+    data = rand(Normal(0, 1), 300)
 
     # Define the components of a basic model.
     insupport(θ) = θ[2] >= 0
@@ -131,4 +131,3 @@ using Test
 
     @testset "EMCEE" begin include("emcee.jl") end
 end
-
