@@ -12,6 +12,7 @@ Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 
 [compat]
 AbstractMCMC = "1"
+DiffResults = "1.0"
 Distributions = "0.20, 0.21, 0.22, 0.23"
 ForwardDiff = "0.10"
 Requires = "1.0"
