@@ -105,12 +105,14 @@ end
 function __init__()
     @require MCMCChains="c7f686f2-ff18-58e9-bc7b-31028e88f75d" include("mcmcchains-connect.jl")
     @require StructArrays="09ab397b-f2b6-538f-b94a-2f83cf4a842a" include("structarray-connect.jl")
+    @require DiffResults = "163ba53b-c6d8-5494-b064-1a9d43ac40c5" begin
+        @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" include("MALA.jl")
+    end
 end
 
 # Include inference methods.
 include("proposal.jl")
 include("mh-core.jl")
 include("emcee.jl")
-include("MALA.jl")
 
 end # module AdvancedMH
