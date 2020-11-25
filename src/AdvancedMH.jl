@@ -35,7 +35,7 @@ struct DensityModel{F<:Function} <: AbstractMCMC.AbstractModel
     logdensity :: F
 end
 
-# Create a very basic Transition type, only stores the 
+# Create a very basic Transition type, only stores the
 # parameter draws and the log probability of the draw.
 struct Transition{T<:Union{Vector, Real, NamedTuple}, L<:Real}
     params :: T
@@ -51,25 +51,11 @@ logdensity(model::DensityModel, t::Transition) = t.lp
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
-    rng::Random.AbstractRNG, 
-    model::DensityModel, 
-    s::MHSampler, 
-    N::Integer,
-    ts::Vector,
-    chain_type::Type{Any}; 
-    param_names=missing,
-    kwargs...
-)
-    return ts
-end
-
-function AbstractMCMC.bundle_samples(
-    rng::Random.AbstractRNG, 
-    model::DensityModel, 
-    s::MHSampler, 
-    N::Integer, 
-    ts::Vector,
-    chain_type::Type{Vector{NamedTuple}}; 
+    ts::Vector{<:Transition},
+    model::DensityModel,
+    sampler::MHSampler,
+    state,
+    chain_type::Type{Vector{NamedTuple}};
     param_names=missing,
     kwargs...
 )
@@ -87,6 +73,25 @@ function AbstractMCMC.bundle_samples(
     ks = tuple(Symbol.(param_names)...)
     nts = [NamedTuple{ks}(tuple(t.params..., t.lp)) for t in ts]
 
+    return nts
+end
+
+function AbstractMCMC.bundle_samples(
+    ts::Vector{<:Transition{<:NamedTuple}},
+    model::DensityModel,
+    sampler::MHSampler,
+    state,
+    chain_type::Type{Vector{NamedTuple}};
+    param_names=missing,
+    kwargs...
+)
+    # If the element type of ts is NamedTuples, just use the names in the
+    # struct.
+
+    # Extract NamedTuples
+    nts = map(x -> merge(x.params, (lp=x.lp,)), ts)
+
+    # Return em'
     return nts
 end
 

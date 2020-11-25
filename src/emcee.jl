@@ -3,43 +3,44 @@ struct Ensemble{D} <: MHSampler
     proposal::D
 end
 
-# Define the first step! function, which is called at the 
-# beginning of sampling. Return the initial parameter used
-# to define the sampler.
-function AbstractMCMC.step!(
+# Define the first sampling step.
+# Return a 2-tuple consisting of the initial sample and the initial state.
+# In this case they are identical.
+function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModel,
-    spl::Ensemble,
-    N::Integer,
-    ::Nothing;
+    spl::Ensemble;
     init_params = nothing,
     kwargs...,
 )
     if init_params === nothing
-        return propose(rng, spl, model)
+        transitions = propose(rng, spl, model)
     else
-        return Transition(model, init_params)
+        transitions = [Transition(model, x) for x in init_params]
     end
+
+    return transitions, transitions
 end
 
-# Define the other step functions. Returns a Transition containing
-# either a new proposal (if accepted) or the previous proposal 
-# (if not accepted).
-function AbstractMCMC.step!(
+# Define the other sampling steps.
+# Return a 2-tuple consisting of the next sample and the the next state.
+# In this case they are identical, and for each walker they are either a new proposal
+# (if accepted) or the previous proposal (if not accepted).
+function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModel,
     spl::Ensemble,
-    ::Integer,
-    params_prev;
+    params_prev::Vector{<:Transition};
     kwargs...,
 )
     # Generate a new proposal. Accept/reject happens at proposal level.
-    return propose(rng, spl, model, params_prev)
+    transitions = propose(rng, spl, model, params_prev)
+    return transitions, transitions
 end
 
 #
 # Initial proposal
-# 
+#
 function propose(rng::Random.AbstractRNG, spl::Ensemble, model::DensityModel)
     # Make the first proposal with a static draw from the prior.
     static_prop = StaticProposal(spl.proposal.proposal)
@@ -49,8 +50,13 @@ end
 
 #
 # Every other proposal
-# 
-function propose(rng::Random.AbstractRNG, spl::Ensemble, model::DensityModel, walkers::Vector{W}) where {W<:Transition}
+#
+function propose(
+    rng::Random.AbstractRNG,
+    spl::Ensemble,
+    model::DensityModel,
+    walkers::Vector{<:Transition},
+)
     new_walkers = similar(walkers)
 
     others = 1:(spl.n_walkers - 1)
@@ -63,7 +69,6 @@ function propose(rng::Random.AbstractRNG, spl::Ensemble, model::DensityModel, wa
 
     return new_walkers
 end
-
 
 #####################################
 # Basic stretch move implementation #
@@ -90,7 +95,7 @@ function move(
     alphamult = (n - 1) * log(z)
 
     # Make new parameters
-    y = @. walker.params + z * (other_walker.params - walker.params)
+    y = @. other_walker.params + z * (walker.params - other_walker.params)
 
     # Construct a new walker
     new_walker = Transition(model, y)

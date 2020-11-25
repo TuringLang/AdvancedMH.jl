@@ -58,14 +58,14 @@ using Test
 
         chain1 = sample(model, spl1, MCMCDistributed(), 10000, 4;
                         param_names=["μ", "σ"], chain_type=Chains)
-        @test mean(chain1["μ"].value) ≈ 0.0 atol=0.1
-        @test mean(chain1["σ"].value) ≈ 1.0 atol=0.1
+        @test mean(chain1["μ"]) ≈ 0.0 atol=0.1
+        @test mean(chain1["σ"]) ≈ 1.0 atol=0.1
 
         if VERSION >= v"1.3"
             chain2 = sample(model, spl1, MCMCThreads(), 10000, 4;
                             param_names=["μ", "σ"], chain_type=Chains)
-            @test mean(chain2["μ"].value) ≈ 0.0 atol=0.1
-            @test mean(chain2["σ"].value) ≈ 1.0 atol=0.1
+            @test mean(chain2["μ"]) ≈ 0.0 atol=0.1
+            @test mean(chain2["σ"]) ≈ 1.0 atol=0.1
         end
     end
 
@@ -84,6 +84,11 @@ using Test
         c2 = sample(m2, MetropolisHastings(p2), 100; chain_type=Vector{NamedTuple})
         c3 = sample(m3, MetropolisHastings(p3), 100; chain_type=Vector{NamedTuple})
         c4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Vector{NamedTuple})
+
+        @test keys(c1[1]) == (:param_1, :lp)
+        @test keys(c2[1]) == (:param_1, :param_2, :lp)
+        @test keys(c3[1]) == (:a, :b, :lp)
+        @test keys(c4[1]) == (:param_1, :lp)
     end
 
     @testset "Initial parameters" begin
@@ -110,5 +115,8 @@ using Test
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
         @test mean(chain1.σ) ≈ 1.0 atol=0.1 
     end
+
+    @testset "EMCEE" begin include("emcee.jl") end
+  
 end
 
