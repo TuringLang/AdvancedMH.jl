@@ -111,7 +111,6 @@ using Test
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
 
-        # chn_mean ≈ dist_mean atol=atol_v
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
         @test mean(chain1.σ) ≈ 1.0 atol=0.1 
     end
@@ -119,4 +118,3 @@ using Test
     @testset "EMCEE" begin include("emcee.jl") end
   
 end
-
