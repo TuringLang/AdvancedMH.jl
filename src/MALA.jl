@@ -1,5 +1,5 @@
-using ForwardDiff: gradient!
-using DiffResults: GradientResult, value, gradient
+using .ForwardDiff: gradient!
+using .DiffResults: GradientResult, value, gradient
 
 struct MALA{D} <: MHSampler
     proposal::D
