@@ -5,6 +5,9 @@ using MCMCChains
 
 using Random
 using Test
+using DiffResults
+using ForwardDiff
+using LinearAlgebra
 
 @testset "AdvancedMH" begin
     # Set a seed
@@ -104,7 +107,6 @@ using Test
     end
     
     @testset "MALA" begin
-        using DiffResults, ForwardDiff, LinearAlgebra
         # Set up our sampler with initial parameters.
         spl1 = MALA(x-> MvNormal((1/2) * 1e-3 * I(2) * x, 1e-3 * I(2)))
 
