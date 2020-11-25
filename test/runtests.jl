@@ -97,5 +97,18 @@ using Test
 
         @test chain1[1].params == val
     end
+    
+    @testset "MALA" begin
+        using DiffResults, ForwardDiff, LinearAlgebra
+        # Set up our sampler with initial parameters.
+        spl1 = MALA(x-> MvNormal((1/2) * 1e-3 * I(2) * x, 1e-3 * I(2)))
+
+        # Sample from the posterior.
+        chain1 = sample(model, spl1, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+
+        # chn_mean ≈ dist_mean atol=atol_v
+        @test mean(chain1.μ) ≈ 0.0 atol=0.1
+        @test mean(chain1.σ) ≈ 1.0 atol=0.1 
+    end
 end
 
