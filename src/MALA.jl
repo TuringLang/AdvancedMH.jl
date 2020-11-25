@@ -6,6 +6,24 @@ struct MALA{D} <: MHSampler
 end
 
 
+# Create a RandomWalkProposal if we weren't given one already.
+MALA(d) = MALA(RandomWalkProposal(d))
+
+# If we were given a RandomWalkProposal, just use that instead.
+MALA(d::RandomWalkProposal) = MALA{typeof(d)}(d)
+
+
+struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}}
+    params :: T
+    lp :: L
+    gradient :: G
+end
+
+
+# Store the new draw, its log density and its gradient
+GradientTransition(model::DensityModel, params) = GradientTransition(params, ∂ℓπ∂θ(model, params)...)
+
+
 function propose(
     rng::Random.AbstractRNG,
     spl::MALA{<:Proposal},
@@ -27,11 +45,11 @@ end
 
 
 """
-    logdensity_and_gradient(model::DensityModel, params)
+    ∂ℓπ∂θ(model::DensityModel, θ::T)
 
 Efficiently returns the value and gradient of the model
 """
-function logdensity_and_gradient(model::DensityModel, params)
+function ∂ℓπ∂θ(model::DensityModel, params)
     res = GradientResult(params)
     gradient!(res, model.logdensity, params)
     return (value(res), gradient(res))
@@ -60,13 +78,15 @@ function AbstractMCMC.step!(
     end
 end
 
+
+
 # Define the other step functions. Returns a Transition containing
 # either a new proposal (if accepted) or the previous proposal 
 # (if not accepted).
 function AbstractMCMC.step!(
     rng::Random.AbstractRNG,
     model::DensityModel,
-    spl::MALA,
+    spl::MALA{<:Proposal},
     ::Integer,
     params_prev;
     kwargs...

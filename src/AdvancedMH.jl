@@ -45,18 +45,6 @@ end
 # Store the new draw and its log density.
 Transition(model::DensityModel, params) = Transition(params, logdensity(model, params))
 
-
-struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}}
-    params :: T
-    lp :: L
-    gradient :: G
-end
-
-
-# Store the new draw, its log density and its gradient
-GradientTransition(model::DensityModel, params) = GradientTransition(params, logdensity_and_gradient(model, params)...)
-
-
 # Calculate the density of the model given some parameterization.
 logdensity(model::DensityModel, params) = model.logdensity(params)
 logdensity(model::DensityModel, t::Transition) = t.lp

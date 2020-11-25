@@ -194,7 +194,7 @@ end
 function AbstractMCMC.step!(
     rng::Random.AbstractRNG,
     model::DensityModel,
-    spl::Union{MetropolisHastings},
+    spl::MetropolisHastings,
     ::Integer,
     params_prev;
     kwargs...
