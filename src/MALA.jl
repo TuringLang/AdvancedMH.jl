@@ -45,7 +45,7 @@ end
 
 
 """
-    logdensity_and_gradient(model::DensityModel, θ::T)
+    logdensity_and_gradient(model::DensityModel, params)
 
 Efficiently returns the value and gradient of the model
 """
