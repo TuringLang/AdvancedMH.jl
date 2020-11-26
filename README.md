@@ -145,8 +145,11 @@ density(θ) = insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
 # Construct a DensityModel.
 model = DensityModel(density)
 
+#MvNormal covariance
+Sigma = 1e-2 * I(2)
+
 # Set up our sampler with a joint multivariate Normal proposal.
-spl = MALA(x-> MvNormal((1/2) * 1e-2 * I(2) * x, 1e-2 * I(2)))
+spl = MALA(x-> MvNormal((1/2) * Sigma * x, Sigma))
 
 # Sample from the posterior.
 chain2 = sample(model, spl2, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
