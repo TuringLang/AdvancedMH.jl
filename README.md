@@ -130,7 +130,6 @@ A set of `init_params` are required. `x->` within the `MALA` struct takes the gr
 using AdvancedMH
 using Distributions
 using MCMCChains
-using LinearAlgebra
 using DiffResults
 using ForwardDiff
 
