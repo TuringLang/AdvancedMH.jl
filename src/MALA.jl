@@ -14,9 +14,9 @@ MALA(d::RandomWalkProposal) = MALA{typeof(d)}(d)
 
 
 struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}} <: AbstractTransition
-    params :: T
-    lp :: L
-    gradient :: G
+    params::T
+    lp::L
+    gradient::G
 end
 
 transition(::MALA, model, params) = GradientTransition(model, params)
