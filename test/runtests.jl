@@ -113,7 +113,7 @@ using LinearAlgebra
         # Set up our sampler with initial parameters.
         spl1 = MALA(x-> MvNormal((1/2) * Sigma * x, Sigma))
 
-        # Sample from the posterior.
+        # Sample from the posterior with initial parameters.
         chain1 = sample(model, spl1, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
 
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
