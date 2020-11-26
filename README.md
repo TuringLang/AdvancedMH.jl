@@ -121,7 +121,7 @@ chain = psample(model, RWMH(init_params), 100000, 4; param_names=["μ","σ"], ch
 
 ## Metropolis-adjusted Langevin algorithm (MALA)
 
-AdvancedMH.jl also offers an implementation of [MALA](https://en.wikipedia.org/wiki/Metropolis-adjusted_Langevin_algorithm) if the `ForwarDiff` and `DiffResults` packages are available. 
+AdvancedMH.jl also offers an implementation of [MALA](https://en.wikipedia.org/wiki/Metropolis-adjusted_Langevin_algorithm) if the `ForwardDiff` and `DiffResults` packages are available. 
 
 A set of `init_params` are required. `x->` within the `MALA` struct takes the gradient computed at the current sample.
 
@@ -152,5 +152,5 @@ Sigma = 1e-2 * I(2)
 spl = MALA(x-> MvNormal((1/2) * Sigma * x, Sigma))
 
 # Sample from the posterior.
-chain2 = sample(model, spl2, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+chain = sample(model, spl, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
 ```
