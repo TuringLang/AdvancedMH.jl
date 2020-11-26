@@ -107,10 +107,9 @@ using ForwardDiff
     
     @testset "MALA" begin
         
-        Sigma = 1e-2 * I(2)
-        
-        # Set up our sampler with initial parameters.
-        spl1 = MALA(x-> MvNormal((1/2) * Sigma * x, Sigma))
+        # Set up the sampler.
+        sigma = 1e-1
+        spl1 = MALA(x -> MvNormal((sigma^2 / 2) .* x, sigma))
 
         # Sample from the posterior with initial parameters.
         chain1 = sample(model, spl1, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])

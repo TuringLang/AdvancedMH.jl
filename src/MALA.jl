@@ -24,6 +24,7 @@ transition(::MALA, model, params) = GradientTransition(model, params)
 # Store the new draw, its log density and its gradient
 GradientTransition(model::DensityModel, params) = GradientTransition(params, logdensity_and_gradient(model, params)...)
 
+propose(rng::Random.AbstractRNG, ::MALA, model) = error("please specify initial parameters")
 
 function propose(
     rng::Random.AbstractRNG,
