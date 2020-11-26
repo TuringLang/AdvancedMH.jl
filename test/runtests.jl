@@ -7,7 +7,6 @@ using Random
 using Test
 using DiffResults
 using ForwardDiff
-using LinearAlgebra
 
 @testset "AdvancedMH" begin
     # Set a seed
