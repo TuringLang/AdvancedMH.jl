@@ -118,3 +118,36 @@ in parallel for free:
 # Sample 4 chains from the posterior.
 chain = psample(model, RWMH(init_params), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
 ```
+
+## Metropolis-adjusted Langevin algorithm (MALA)
+
+AdvancedMH.jl also offers an implementation of [MALA](https://en.wikipedia.org/wiki/Metropolis-adjusted_Langevin_algorithm) if the `ForwarDiff` and `DiffResults` packages are available. 
+
+A set of `init_params` are required. `x->` within the `MALA` struct takes the gradient computed at the current sample.
+
+```julia
+# Import the package.
+using AdvancedMH
+using Distributions
+using MCMCChains
+using LinearAlgebra
+using DiffResults
+using ForwardDiff
+
+# Generate a set of data from the posterior we want to estimate.
+data = rand(Normal(0, 1), 30)
+
+# Define the components of a basic model.
+insupport(θ) = θ[2] >= 0
+dist(θ) = Normal(θ[1], θ[2])
+density(θ) = insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
+
+# Construct a DensityModel.
+model = DensityModel(density)
+
+# Set up our sampler with a joint multivariate Normal proposal.
+spl = MALA(x-> MvNormal((1/2) * 1e-2 * I(2) * x, 1e-2 * I(2)))
+
+# Sample from the posterior.
+chain2 = sample(model, spl2, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+```

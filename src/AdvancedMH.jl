@@ -17,6 +17,9 @@ export sample, MCMCThreads, MCMCDistributed
 # Abstract type for MH-style samplers. Needs better name? 
 abstract type MHSampler <: AbstractMCMC.AbstractSampler end
 
+# Abstract type for MH-style transitions.
+abstract type AbstractTransition end
+
 # Define a model type. Stores the log density function and the data to 
 # evaluate the log density on.
 """
@@ -37,7 +40,7 @@ end
 
 # Create a very basic Transition type, only stores the
 # parameter draws and the log probability of the draw.
-struct Transition{T<:Union{Vector, Real, NamedTuple}, L<:Real}
+struct Transition{T<:Union{Vector, Real, NamedTuple}, L<:Real} <: AbstractTransition
     params :: T
     lp :: L
 end
@@ -51,7 +54,7 @@ logdensity(model::DensityModel, t::Transition) = t.lp
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
-    ts::Vector{<:Transition},
+    ts::Vector{<:AbstractTransition},
     model::DensityModel,
     sampler::MHSampler,
     state,

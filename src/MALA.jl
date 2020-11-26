@@ -13,12 +13,13 @@ MALA(d) = MALA(RandomWalkProposal(d))
 MALA(d::RandomWalkProposal) = MALA{typeof(d)}(d)
 
 
-struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}}
+struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}} <: AbstractTransition
     params :: T
     lp :: L
     gradient :: G
 end
 
+transition(::MALA, model, params) = GradientTransition(model, params)
 
 # Store the new draw, its log density and its gradient
 GradientTransition(model::DensityModel, params) = GradientTransition(params, logdensity_and_gradient(model, params)...)
@@ -57,51 +58,3 @@ end
 
 
 logdensity(model::DensityModel, t::GradientTransition) = t.lp
-
-
-# Define the first step! function, which is called at the 
-# beginning of sampling. Return the initial parameter used
-# to define the sampler.
-function AbstractMCMC.step!(
-    rng::Random.AbstractRNG,
-    model::DensityModel,
-    spl::MALA{<:Proposal},
-    N::Integer,
-    ::Nothing;
-    init_params=nothing,
-    kwargs...
-)
-    if init_params === nothing
-        @warn "need init_params"
-    else
-        return GradientTransition(model, init_params)
-    end
-end
-
-
-
-# Define the other step functions. Returns a Transition containing
-# either a new proposal (if accepted) or the previous proposal 
-# (if not accepted).
-function AbstractMCMC.step!(
-    rng::Random.AbstractRNG,
-    model::DensityModel,
-    spl::MALA{<:Proposal},
-    ::Integer,
-    params_prev;
-    kwargs...
-)
-    # Generate a new proposal.
-    params = propose(rng, spl, model, params_prev)
-
-    # Calculate the log acceptance probability.
-    logα = logdensity(model, params) - logdensity(model, params_prev) +
-        q(spl, params_prev, params) - q(spl, params, params_prev)
-
-    # Decide whether to return the previous params or the new one.
-    if -Random.randexp(rng) < logα
-        return params
-    else
-        return params_prev
-    end
-end

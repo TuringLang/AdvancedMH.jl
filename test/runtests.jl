@@ -108,7 +108,7 @@ using LinearAlgebra
     
     @testset "MALA" begin
         # Set up our sampler with initial parameters.
-        spl1 = MALA(x-> MvNormal((1/2) * 1e-3 * I(2) * x, 1e-3 * I(2)))
+        spl1 = MALA(x-> MvNormal((1/2) * 1e-2 * I(2) * x, 1e-2 * I(2)))
 
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
