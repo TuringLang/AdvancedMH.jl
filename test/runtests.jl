@@ -5,6 +5,8 @@ using MCMCChains
 
 using Random
 using Test
+using DiffResults
+using ForwardDiff
 
 @testset "AdvancedMH" begin
     # Set a seed
@@ -102,7 +104,20 @@ using Test
 
         @test chain1[1].params == val
     end
+    
+    @testset "MALA" begin
+        
+        # Set up the sampler.
+        sigma = 1e-1
+        spl1 = MALA(x -> MvNormal((sigma^2 / 2) .* x, sigma))
+
+        # Sample from the posterior with initial parameters.
+        chain1 = sample(model, spl1, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+
+        @test mean(chain1.μ) ≈ 0.0 atol=0.1
+        @test mean(chain1.σ) ≈ 1.0 atol=0.1 
+    end
 
     @testset "EMCEE" begin include("emcee.jl") end
+  
 end
-
