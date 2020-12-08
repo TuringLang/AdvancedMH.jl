@@ -242,6 +242,8 @@ function AbstractMCMC.step(
 
     # Calculate the log acceptance probability.
     logα = logdensity(model, params) - logdensity(model, params_prev)
+
+    # Compute Hastings portion of ratio if proposal is not symmetric.
     if !is_symmetric_proposal(spl.proposal)
       logα += q(spl, params_prev, params) - q(spl, params, params_prev)
     end
