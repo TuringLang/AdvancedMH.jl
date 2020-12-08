@@ -192,7 +192,7 @@ function AbstractMCMC.step(
 end
 
 """
-    is_symmetric_proposal(proposal::P) where P
+    is_symmetric_proposal(proposal)
 
 # Example:
 
