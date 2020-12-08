@@ -112,6 +112,7 @@ using ForwardDiff
         # Set up the proposal.
         p1 = (x=RandomWalkProposal(Normal(0,.5)), y=RandomWalkProposal(Normal(0,.5)))
         AdvancedMH.is_symmetric_proposal(proposal::typeof(p1)) = true
+        @test AdvancedMH.is_symmetric_proposal(p1)
 
         # Sample from the posterior with initial parameters.
         chain1 = sample(m1, MetropolisHastings(p1), 100000; chain_type=Vector{NamedTuple})
