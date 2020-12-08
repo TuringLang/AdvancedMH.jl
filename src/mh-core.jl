@@ -203,8 +203,7 @@ function AbstractMCMC.step(
     params = propose(rng, spl, model, params_prev)
 
     # Calculate the log acceptance probability.
-    logα = logdensity(model, params) - logdensity(model, params_prev) +
-        q(spl, params_prev, params) - q(spl, params, params_prev)
+    logα = compute_log_acceptance_prob(model, params, spl, params_prev)
 
     # Decide whether to return the previous params or the new one.
     if -Random.randexp(rng) < logα
@@ -212,4 +211,67 @@ function AbstractMCMC.step(
     else
         return params_prev, params_prev
     end
+end
+
+"""
+Type alias for symmetric distributions. This is not an exhaustive list. (e.g.
+`Uniform` can be symmetric.)
+"""
+const SymmetricDistribution = Union{Normal,MvNormal,MvTDist,Cauchy,TDist}
+
+"""
+Type alias for symmetric random walk proposals 
+"""
+const SymmetricRandomWalkProposal = let
+    Union{RandomWalkProposal{<:SymmetricDistribution},
+          RandomWalkProposal{<:AbstractVector{<:SymmetricDistribution}}}
+end
+
+"""
+Type alias for symmetric proposals.
+
+NOTE to developers: Currently, this is `SymmetricRandomWalkProposal`, but new
+proposals (e.g. an adaptive random walk proposal) can be added to the `Union`.
+"""
+const SymmetricProposal = Union{SymmetricRandomWalkProposal}
+
+"""
+Computes metropolis acceptance ratio (without Hastings).
+"""
+function compute_log_metropolis_ratio(
+    model::DensityModel,
+    params::T,
+    spl::MetropolisHastings,
+    params_prev::Transition
+) where T
+  return logdensity(model, params) - logdensity(model, params_prev)
+end
+
+"""
+Computes log acceptance ratio for symmetric proposals. This is simply
+the log Metropolis ratio.
+"""
+function compute_log_acceptance_prob(
+    model::DensityModel,
+    params::T,
+    spl::MetropolisHastings{<:SymmetricProposal},
+    params_prev::Transition) where T
+
+    # Don't compute Hastings ratio for symmetric proposal distributions.
+    return compute_log_metropolis_ratio(model, params, spl, params_prev)
+end
+
+"""
+Computes log acceptance ratio for symmetric proposals. This is the 
+full log-Metropolis-Hastings acceptance probability.
+"""
+function compute_log_acceptance_prob(
+    model::DensityModel,
+    params::T,
+    spl::MetropolisHastings,
+    params_prev::Transition) where T
+
+    metropolis_ratio = compute_log_metropolis_ratio(model, params, spl, params_prev)
+    hastings_ratio = q(spl, params_prev, params) - q(spl, params, params_prev)
+    return metropolis_ratio + hastings_ratio
 end

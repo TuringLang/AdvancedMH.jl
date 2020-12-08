@@ -42,6 +42,10 @@ using Test
         spl1 = RWMH([Normal(0,1), Normal(0, 1)])
         spl2 = RWMH(MvNormal([0.0, 0.0], 1))
 
+        # Ensure that these are `SymmetricProposal`s.
+        @test spl1 isa AdvancedMH.MetropolisHastings{<:AdvancedMH.SymmetricProposal}
+        @test spl2 isa AdvancedMH.MetropolisHastings{<:AdvancedMH.SymmetricProposal}
+
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
         chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"])
