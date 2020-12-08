@@ -169,20 +169,23 @@ function q(
     end
 end
 
+transition(sampler, model, params) = transition(model, params)
+transition(model, params) = Transition(model, params)
+
 # Define the first sampling step.
 # Return a 2-tuple consisting of the initial sample and the initial state.
 # In this case they are identical.
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModel,
-    spl::MetropolisHastings;
+    spl::MHSampler;
     init_params=nothing,
     kwargs...
 )
     if init_params === nothing
         transition = propose(rng, spl, model)
     else
-        transition = Transition(model, init_params)
+        transition = AdvancedMH.transition(spl, model, init_params)
     end
 
     return transition, transition
@@ -195,8 +198,8 @@ end
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModel,
-    spl::MetropolisHastings,
-    params_prev::Transition;
+    spl::MHSampler,
+    params_prev::AbstractTransition;
     kwargs...
 )
     # Generate a new proposal.
