@@ -104,7 +104,24 @@ using ForwardDiff
 
         @test chain1[1].params == val
     end
-    
+
+    @testset "is_symmetric_proposal" begin
+        # Model definition.
+        m1 = DensityModel(s -> logpdf(Normal(), s.x) + logpdf(Normal(5,.7), s.y))
+
+        # Set up the proposal.
+        p1 = (x=RandomWalkProposal(Normal(0,.5)), y=RandomWalkProposal(Normal(0,.5)))
+        AdvancedMH.is_symmetric_proposal(proposal::typeof(p1)) = true
+
+        # Sample from the posterior with initial parameters.
+        chain1 = sample(m1, MetropolisHastings(p1), 100000; chain_type=Vector{NamedTuple})
+
+        @test mean(getindex.(chain1, :x)) ≈ 0 atol=0.05
+        @test mean(getindex.(chain1, :y)) ≈ 5 atol=0.05
+        @test std(getindex.(chain1, :x)) ≈ 1 atol=0.05
+        @test std(getindex.(chain1, :y)) ≈ .7 atol=0.05
+    end
+
     @testset "MALA" begin
         
         # Set up the sampler.
