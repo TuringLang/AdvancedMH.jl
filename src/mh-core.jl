@@ -242,7 +242,7 @@ function AbstractMCMC.step(
 
     # Calculate the log acceptance probability.
     logα = logdensity(model, params) - logdensity(model, params_prev)
-    if is_symmetric_proposal(spl.proposal)
+    if !is_symmetric_proposal(spl.proposal)
       logα += q(spl, params_prev, params) - q(spl, params, params_prev)
     end
 
