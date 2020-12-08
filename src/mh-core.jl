@@ -192,8 +192,15 @@ function AbstractMCMC.step(
 end
 
 """
-    is_symmetric_proposal(proposal)
+    is_symmetric_proposal(proposal)::Bool
 
+Implementing this for a custom proposal will allow `AbstractMCMC.step` to avoid
+computing the "Hastings" part of the Metropolis-Hasting log acceptance
+probability (if the proposal is indeed symmetric). By default,
+`is_symmetric_proposal(proposal)` returns `false`.  The user is responsible for
+determining whether a custom proposal distribution is indeed symmetric.  As
+noted in `MetropolisHastings`, `proposal` is a `Proposal`, `NamedTuple` of
+`Proposal`, or `Array{Proposal}` in the shape of your data.
 """
 is_symmetric_proposal(proposal) = false
 
