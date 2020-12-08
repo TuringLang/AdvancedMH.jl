@@ -194,37 +194,20 @@ end
 """
     is_symmetric_proposal(proposal)
 
-# Example:
-
-```julia
-using Distributions, AdvancedMH
-
-# Model definition.
-model = DensityModel(s -> logpdf(Normal(), s.x) + logpdf(Normal(5,.7), s.y))
-
-# Set up the proposal.
-p = (x=RandomWalkProposal(Normal(0,.5)), y=RandomWalkProposal(Normal(0,.5)))
-
-# Implementing this will skip the computation of the Hastings ratio.
-AdvancedMH.is_symmetric_proposal(proposal::typeof(p)) = true
-
-# Sample from the posterior with initial parameters.
-chain = sample(m1, MetropolisHastings(p), 100000; chain_type=Vector{NamedTuple})
-```
 """
-is_symmetric_proposal(proposal::P) where P = false
+is_symmetric_proposal(proposal) = false
 
 # The following univariate random walk proposals are symmetric.
-is_symmetric_proposal(proposal::RandomWalkProposal{<:Normal}) = true
-is_symmetric_proposal(proposal::RandomWalkProposal{<:MvNormal}) = true
-is_symmetric_proposal(proposal::RandomWalkProposal{<:TDist}) = true
-is_symmetric_proposal(proposal::RandomWalkProposal{<:Cauchy}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:Normal}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:MvNormal}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:TDist}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:Cauchy}) = true
 
 # The following multivariate random walk proposals are symmetric.
-is_symmetric_proposal(proposal::RandomWalkProposal{AbstractArray{<:Normal}}) = true
-is_symmetric_proposal(proposal::RandomWalkProposal{AbstractArray{<:MvNormal}}) = true
-is_symmetric_proposal(proposal::RandomWalkProposal{AbstractArray{<:TDist}}) = true
-is_symmetric_proposal(proposal::RandomWalkProposal{AbstractArray{<:Cauchy}}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:AbstractArray{<:Normal}}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:AbstractArray{<:MvNormal}}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:AbstractArray{<:TDist}}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:AbstractArray{<:Cauchy}}) = true
 
 # Define the other sampling steps.
 # Return a 2-tuple consisting of the next sample and the the next state.
