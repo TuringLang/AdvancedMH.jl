@@ -8,6 +8,8 @@ using Test
 using DiffResults
 using ForwardDiff
 
+include("util.jl")
+
 @testset "AdvancedMH" begin
     # Set a seed
     Random.seed!(1234)
@@ -106,21 +108,27 @@ using ForwardDiff
     end
 
     @testset "is_symmetric_proposal" begin
-        # Model definition.
-        m1 = DensityModel(s -> logpdf(Normal(), s.x) + logpdf(Normal(5,.7), s.y))
+        # True distributions
+        d1 = Normal(5, .7)
 
-        # Set up the proposal.
-        p1 = (x=RandomWalkProposal(Normal(0,.5)), y=RandomWalkProposal(Normal(0,.5)))
-        AdvancedMH.is_symmetric_proposal(proposal::typeof(p1)) = true
+        # Model definition.
+        m1 = DensityModel(x -> logpdf(d1, x))
+
+        # Set up the proposal (StandardNormal is a custom distribution in "util.jl").
+        p1 = RandomWalkProposal(StandardNormal())
+
+        # Implement `is_symmetric_proposal` for StandardNormal random walk proposal.
+        AdvancedMH.is_symmetric_proposal(::RandomWalkProposal{<:StandardNormal}) = true
+
+        # Make sure `is_symmetric_proposal` behaves correctly.
         @test AdvancedMH.is_symmetric_proposal(p1)
 
         # Sample from the posterior with initial parameters.
-        chain1 = sample(m1, MetropolisHastings(p1), 100000; chain_type=Vector{NamedTuple})
+        chain1 = sample(m1, MetropolisHastings(p1), 100000;
+                        chain_type=StructArray, param_names=["x"])
 
-        @test mean(getindex.(chain1, :x)) ≈ 0 atol=0.05
-        @test mean(getindex.(chain1, :y)) ≈ 5 atol=0.05
-        @test std(getindex.(chain1, :x)) ≈ 1 atol=0.05
-        @test std(getindex.(chain1, :y)) ≈ .7 atol=0.05
+        @test mean(chain1.x) ≈ mean(d1) atol=0.05
+        @test std(chain1.x) ≈ std(d1) atol=0.05
     end
 
     @testset "MALA" begin
