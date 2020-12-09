@@ -191,6 +191,31 @@ function AbstractMCMC.step(
     return transition, transition
 end
 
+"""
+    is_symmetric_proposal(proposal)::Bool
+
+Implementing this for a custom proposal will allow `AbstractMCMC.step` to avoid
+computing the "Hastings" part of the Metropolis-Hasting log acceptance
+probability (if the proposal is indeed symmetric). By default,
+`is_symmetric_proposal(proposal)` returns `false`.  The user is responsible for
+determining whether a custom proposal distribution is indeed symmetric.  As
+noted in `MetropolisHastings`, `proposal` is a `Proposal`, `NamedTuple` of
+`Proposal`, or `Array{Proposal}` in the shape of your data.
+"""
+is_symmetric_proposal(proposal) = false
+
+# The following univariate random walk proposals are symmetric.
+is_symmetric_proposal(::RandomWalkProposal{<:Normal}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:MvNormal}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:TDist}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:Cauchy}) = true
+
+# The following multivariate random walk proposals are symmetric.
+is_symmetric_proposal(::RandomWalkProposal{<:AbstractArray{<:Normal}}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:AbstractArray{<:MvNormal}}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:AbstractArray{<:TDist}}) = true
+is_symmetric_proposal(::RandomWalkProposal{<:AbstractArray{<:Cauchy}}) = true
+
 # Define the other sampling steps.
 # Return a 2-tuple consisting of the next sample and the the next state.
 # In this case they are identical, and either a new proposal (if accepted)
@@ -206,8 +231,12 @@ function AbstractMCMC.step(
     params = propose(rng, spl, model, params_prev)
 
     # Calculate the log acceptance probability.
-    logα = logdensity(model, params) - logdensity(model, params_prev) +
-        q(spl, params_prev, params) - q(spl, params, params_prev)
+    logα = logdensity(model, params) - logdensity(model, params_prev)
+
+    # Compute Hastings portion of ratio if proposal is not symmetric.
+    if !is_symmetric_proposal(spl.proposal)
+      logα += q(spl, params_prev, params) - q(spl, params, params_prev)
+    end
 
     # Decide whether to return the previous params or the new one.
     if -Random.randexp(rng) < logα

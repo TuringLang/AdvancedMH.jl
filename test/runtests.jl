@@ -8,6 +8,8 @@ using Test
 using DiffResults
 using ForwardDiff
 
+include("util.jl")
+
 @testset "AdvancedMH" begin
     # Set a seed
     Random.seed!(1234)
@@ -104,7 +106,31 @@ using ForwardDiff
 
         @test chain1[1].params == val
     end
-    
+
+    @testset "is_symmetric_proposal" begin
+        # True distributions
+        d1 = Normal(5, .7)
+
+        # Model definition.
+        m1 = DensityModel(x -> logpdf(d1, x))
+
+        # Set up the proposal (StandardNormal is a custom distribution in "util.jl").
+        p1 = RandomWalkProposal(StandardNormal())
+
+        # Implement `is_symmetric_proposal` for StandardNormal random walk proposal.
+        AdvancedMH.is_symmetric_proposal(::RandomWalkProposal{<:StandardNormal}) = true
+
+        # Make sure `is_symmetric_proposal` behaves correctly.
+        @test AdvancedMH.is_symmetric_proposal(p1)
+
+        # Sample from the posterior with initial parameters.
+        chain1 = sample(m1, MetropolisHastings(p1), 100000;
+                        chain_type=StructArray, param_names=["x"])
+
+        @test mean(chain1.x) ≈ mean(d1) atol=0.05
+        @test std(chain1.x) ≈ std(d1) atol=0.05
+    end
+
     @testset "MALA" begin
         
         # Set up the sampler.
