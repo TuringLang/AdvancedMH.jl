@@ -133,6 +133,7 @@ using Distributions
 using MCMCChains
 using DiffResults
 using ForwardDiff
+using StructArrays
 
 # Generate a set of data from the posterior we want to estimate.
 data = rand(Normal(0, 1), 30)
