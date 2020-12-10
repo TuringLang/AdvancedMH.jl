@@ -88,6 +88,28 @@ using Test
         c2 = sample(m1, MetropolisHastings(p2), 10000; kwargs...)
         @test ess(c2).nt.ess > ess(c1).nt.ess
     end
+    
+    @testset "Adaptive MvNormal mixture" begin
+        p1 = AdaptiveMvNormal(MvNormal(2, 0.1))
+        spl1 = MetropolisHastings(p1)
+        kwargs = (progress=false, chain_type=StructArray, param_names=["μ", "σ"])
+        chain1 = sample(model, spl1, 100000; kwargs...)
+        @test mean(chain1.μ) ≈ 0.0 atol=0.1
+        @test mean(chain1.σ) ≈ 1.0 atol=0.1
+    end
+    
+    @testset "Adaptive MvNormal mixture ESS" begin
+        Random.seed!(12)
+        d = 25
+        M = randn(d,d)
+        Σ = M*M'
+        m = DensityModel(x -> logpdf(MvNormal(Σ), x))
+        p = AdaptiveMvNormal(MvNormal(d, 1.))
+        kwargs = (progress=false, chain_type=Chains)
+        c1 = sample(m, MetropolisHastings(p), 10000; kwargs...)
+        c2 = sample(m, RWMH(MvNormal(zeros(d), 1)), 10000; kwargs...)
+        @test sum(ess(c1).nt.ess .> ess(c2).nt.ess) > 20
+    end
 
     @testset "parallel sampling" begin
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
