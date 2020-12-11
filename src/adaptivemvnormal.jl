@@ -61,7 +61,7 @@ end
 
 function Base.rand(rng::Random.AbstractRNG, p::AdaptiveMvNormal)
     return if p.n > 2p.d 
-        p.β * rand(rng, p.constant) + (1.0 - p.β) * rand(rng, p.adaptive)
+        p.β * rand(rng, p.constant) + (1 - p.β) * rand(rng, p.adaptive)
     else
         rand(rng, p.constant)
     end
