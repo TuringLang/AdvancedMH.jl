@@ -247,5 +247,4 @@ function AbstractMCMC.step(
     end
 end
 
-function accepted!(p::P) where P<:Proposal end
-
+accepted!(::Proposal) = nothing
