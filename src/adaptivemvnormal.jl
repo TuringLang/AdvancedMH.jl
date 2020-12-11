@@ -48,9 +48,9 @@ is largely based on `Mamba.jl`.
 function adapt!(p::AdaptiveMvNormal, x::AbstractVector)
     p.n += 1
     # adapt mean vector and scatter matrix
-    f = p.n / (p.n + 1.0)
-    p.Ex = f * p.Ex + (1.0 - f) * x
-    p.EX = f * p.EX + (1.0 - f) * x * x'
+    f = p.n / (p.n + 1)
+    p.Ex = f * p.Ex + (1 - f) * x
+    p.EX = f * p.EX + (1 - f) * x * x'
     # compute adapted covariance matrix
     Σ = (p.σ^2 / (p.d * f)) * (p.EX - p.Ex * p.Ex') 
     F = cholesky(Hermitian(Σ), check=false) 
@@ -80,5 +80,4 @@ function propose(
     adapt!(proposal, t)
     return t + rand(rng, proposal)
 end
-
 
