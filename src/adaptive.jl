@@ -55,6 +55,9 @@ function AdaptiveProposal(p; kwargs...)
     return AdaptiveProposal(p, Adaptor(; kwargs...))
 end
 
+# Adaptive proposals are only defined for symmetric proposal distributions
+is_symmetric_proposal(::AdaptiveProposal) = true
+
 accepted!(p::AdaptiveProposal) = p.adaptor.accepted += 1
 accepted!(p::Vector{<:AdaptiveProposal}) = map(accepted!, p)
 accepted!(p::NamedTuple{names}) where names = map(x->accepted!(getfield(p, x)), names)

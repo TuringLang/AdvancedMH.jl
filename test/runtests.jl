@@ -103,16 +103,16 @@ include("util.jl")
     end
     
     @testset "Adaptive MvNormal mixture ESS" begin
-        Random.seed!(12)
         d = 25
-        M = randn(d,d)
+        M = rand(MvNormal(d,1), d)
         Σ = M*M'
         m = DensityModel(x -> logpdf(MvNormal(Σ), x))
         p = AdaptiveMvNormal(MvNormal(d, 1.))
         kwargs = (progress=false, chain_type=Chains)
         c1 = sample(m, MetropolisHastings(p), 10000; kwargs...)
+        display(p.adaptive.Σ)
         c2 = sample(m, RWMH(MvNormal(zeros(d), 1)), 10000; kwargs...)
-        @test sum(ess(c1).nt.ess .> ess(c2).nt.ess) > 20
+        @test sum(ess(c1).nt.ess .> ess(c2).nt.ess) == 25
     end
 
     @testset "parallel sampling" begin
@@ -182,21 +182,22 @@ include("util.jl")
         @test AdvancedMH.is_symmetric_proposal(p1)
 
         # Sample from the posterior with initial parameters.
-        chain1 = sample(m1, MetropolisHastings(p1), 100000;
-                        chain_type=StructArray, param_names=["x"])
+        chain1 = sample(m1, MetropolisHastings(p1), 100000; 
+                        progress=false, chain_type=StructArray, param_names=["x"])
 
         @test mean(chain1.x) ≈ mean(d1) atol=0.05
         @test std(chain1.x) ≈ std(d1) atol=0.05
     end
 
     @testset "MALA" begin
-        
+    
         # Set up the sampler.
         sigma = 1e-1
         spl1 = MALA(x -> MvNormal((sigma^2 / 2) .* x, sigma))
 
         # Sample from the posterior with initial parameters.
-        chain1 = sample(model, spl1, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+        chain1 = sample(model, spl1, 100000; progress=false, init_params=ones(2), 
+                        chain_type=StructArray, param_names=["μ", "σ"])
 
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
         @test mean(chain1.σ) ≈ 1.0 atol=0.1 
