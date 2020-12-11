@@ -60,7 +60,7 @@ function adapt!(p::AdaptiveMvNormal, x::AbstractVector)
 end
 
 function Base.rand(rng::Random.AbstractRNG, p::AdaptiveMvNormal)
-    return if p.n > 2p.d 
+    return if p.n > 2 * p.d
         p.β * rand(rng, p.constant) + (1 - p.β) * rand(rng, p.adaptive)
     else
         rand(rng, p.constant)
