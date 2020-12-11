@@ -31,7 +31,7 @@ end
 
 function AdaptiveMvNormal(dist::MvNormal; σ=2.38, β=0.05)
     n = length(dist)
-    adaptive = MvNormal(PDMat(Symmetric(dist.Σ)))
+    adaptive = MvNormal(cov(dist))
     AdaptiveMvNormal(n, -1, β, σ, dist, adaptive, zeros(n), zeros(n,n))
 end
 
@@ -80,4 +80,3 @@ function propose(
     adapt!(proposal, t)
     return t + rand(rng, proposal)
 end
-
