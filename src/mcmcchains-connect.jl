@@ -2,7 +2,7 @@ import .MCMCChains: Chains
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
-    ts::Vector{<:Transition},
+    ts::Vector{<:Transition{<:AbstractArray}},
     model::DensityModel,
     sampler::MHSampler,
     state,
@@ -23,6 +23,40 @@ function AbstractMCMC.bundle_samples(
 
     # Add the log density field to the parameter names.
     push!(param_names, :lp)
+
+    # Bundle everything up and return a Chains struct.
+    return Chains(vals, param_names, (internals = [:lp],))
+end
+
+function AbstractMCMC.bundle_samples(
+    ts::Vector{<:Transition{<:NamedTuple}},
+    model::DensityModel,
+    sampler::MHSampler,
+    state,
+    chain_type::Type{Chains};
+    param_names=missing,
+    kwargs...
+)
+    # Convert to a Vector{NamedTuple} first
+    nts = AbstractMCMC.bundle_samples(ts, model, sampler, state, Vector{NamedTuple}; param_names=param_names, kwargs...)
+
+    # Get all the keys
+    all_keys = unique(mapreduce(collect∘keys, vcat, nts))
+
+    # Preallocate array
+    # vals = []
+
+    # Push linearized draws onto array
+    trygetproperty(thing, key) = key in keys(thing) ? getproperty(thing, key) : missing
+    vals = map(nt -> [trygetproperty(nt, k) for k in all_keys], nts)
+
+    # Check if we received any parameter names.
+    if ismissing(param_names)
+        param_names = all_keys
+    else
+        # Generate new array to be thread safe.
+        param_names = Symbol.(param_names)
+    end
 
     # Bundle everything up and return a Chains struct.
     return Chains(vals, param_names, (internals = [:lp],))

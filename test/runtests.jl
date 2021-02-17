@@ -73,6 +73,20 @@ include("util.jl")
         end
     end
 
+    @testset "MCMCChains" begin
+        spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
+        spl2 = MetropolisHastings((μ = StaticProposal(Normal(0,1)), σ = StaticProposal(Normal(0, 1))))
+
+        chain1 = sample(model, spl1, 10_000; param_names=["μ", "σ"], chain_type=Chains)
+        chain2 = sample(model, spl2, 10_000; chain_type=Chains)
+
+        @test mean(chain1["μ"]) ≈ 0.0 atol=0.1
+        @test mean(chain1["σ"]) ≈ 1.0 atol=0.1
+
+        @test mean(chain2["μ"]) ≈ 0.0 atol=0.1
+        @test mean(chain2["σ"]) ≈ 1.0 atol=0.1
+    end
+
     @testset "Proposal styles" begin
         m1 = DensityModel(x -> logpdf(Normal(x,1), 1.0))
         m2 = DensityModel(x -> logpdf(Normal(x[1], x[2]), 1.0))
