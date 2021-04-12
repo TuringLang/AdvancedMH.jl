@@ -4,12 +4,15 @@ module AdvancedMH
 using AbstractMCMC
 using Distributions
 using Requires
+using LinearAlgebra
+using PDMats
 
 import Random
 
 # Exports
 export MetropolisHastings, DensityModel, RWMH, StaticMH, StaticProposal, 
-    RandomWalkProposal, Ensemble, StretchProposal, MALA
+    RandomWalkProposal, Ensemble, StretchProposal, MALA, AdaptiveProposal, 
+    AdaptiveMvNormal
 
 # Reexports
 export sample, MCMCThreads, MCMCDistributed
@@ -110,5 +113,7 @@ end
 include("proposal.jl")
 include("mh-core.jl")
 include("emcee.jl")
+include("adaptive.jl")
+include("adaptivemvnormal.jl")
 
 end # module AdvancedMH

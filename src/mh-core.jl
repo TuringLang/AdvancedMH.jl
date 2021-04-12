@@ -240,8 +240,11 @@ function AbstractMCMC.step(
 
     # Decide whether to return the previous params or the new one.
     if -Random.randexp(rng) < logα
+        accepted!(spl.proposal)
         return params, params
     else
         return params_prev, params_prev
     end
 end
+
+accepted!(::Proposal) = nothing
