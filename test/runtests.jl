@@ -121,26 +121,34 @@ include("util.jl")
         @test chain1[1].params == val
     end
 
-    @testset "is_symmetric_proposal" begin
+    @testset "symmetric random walk" begin
         # True distributions
         d1 = Normal(5, .7)
 
         # Model definition.
         m1 = DensityModel(x -> logpdf(d1, x))
 
-        # Set up the proposal (StandardNormal is a custom distribution in "util.jl").
+        # Custom standard normal distribution without `logpdf` defined errors since the
+        # acceptance probability cannot be computed
         p1 = RandomWalkProposal(StandardNormal())
+        @test p1 isa RandomWalkProposal{false}
+        @test_throws MethodError AdvancedMH.logratio_proposal_density(p1, randn(), randn())
+        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10)
 
-        # Implement `is_symmetric_proposal` for StandardNormal random walk proposal.
-        AdvancedMH.is_symmetric_proposal(::RandomWalkProposal{<:StandardNormal}) = true
-
-        # Make sure `is_symmetric_proposal` behaves correctly.
-        @test AdvancedMH.is_symmetric_proposal(p1)
-
-        # Sample from the posterior with initial parameters.
-        chain1 = sample(m1, MetropolisHastings(p1), 100000;
-                        chain_type=StructArray, param_names=["x"])
-
+        # If the random walk is declared to be symmetric, the log ratio of the proposal
+        # density is not evaluated.
+        p2 = RandomWalkProposal{true}(StandardNormal())
+        @test p2 isa RandomWalkProposal{true}
+        @test iszero(AdvancedMH.logratio_proposal_density(p2, randn(), randn()))
+        @test iszero(AdvancedMH.logratio_proposal_density([p2], randn(1), randn(1)))
+        @test iszero(AdvancedMH.logratio_proposal_density((p2,), (randn(),), (randn(),)))
+        @test iszero(AdvancedMH.logratio_proposal_density(
+            (; x=p2), (; x=randn()), (; x=randn())
+        ))
+        chain1 = sample(
+            m1, MetropolisHastings(p2), 100000;
+            chain_type=StructArray, param_names=["x"]
+        )
         @test mean(chain1.x) ≈ mean(d1) atol=0.05
         @test std(chain1.x) ≈ std(d1) atol=0.05
     end

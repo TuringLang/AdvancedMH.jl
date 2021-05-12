@@ -4,8 +4,13 @@ struct StaticProposal{P} <: Proposal{P}
     proposal::P
 end
 
-struct RandomWalkProposal{P} <: Proposal{P}
+struct RandomWalkProposal{issymmetric,P} <: Proposal{P}
     proposal::P
+end
+
+RandomWalkProposal(proposal) = RandomWalkProposal{false}(proposal)
+function RandomWalkProposal{issymmetric}(proposal) where {issymmetric}
+    return RandomWalkProposal{issymmetric,typeof(proposal)}(proposal)
 end
 
 # Random draws
@@ -32,7 +37,7 @@ end
 
 function propose(
     rng::Random.AbstractRNG,
-    proposal::RandomWalkProposal{<:Union{Distribution,AbstractArray}}, 
+    proposal::RandomWalkProposal,
     model::DensityModel, 
     t
 )
@@ -40,7 +45,7 @@ function propose(
 end
 
 function q(
-    proposal::RandomWalkProposal{<:Union{Distribution,AbstractArray}}, 
+    proposal::RandomWalkProposal,
     t,
     t_cond
 )
@@ -73,11 +78,13 @@ end
 ############
 
 # function definition with abstract types requires Julia 1.3 or later
-for T in (StaticProposal, RandomWalkProposal)
-    @eval begin
-        (p::$T{<:Function})() = $T(p.proposal())
-        (p::$T{<:Function})(t) = $T(p.proposal(t))
-    end
+(p::StaticProposal{<:Function})() = StaticProposal(p.proposal())
+(p::StaticProposal{<:Function})(t) = StaticProposal(p.proposal(t))
+function (p::RandomWalkProposal{issymmetric,<:Function})() where {issymmetric}
+    return RandomWalkProposal{issymmetric}(p.proposal())
+end
+function (p::RandomWalkProposal{issymmetric,<:Function})(t) where {issymmetric}
+    return RandomWalkProposal{issymmetric}(p.proposal(t))
 end
 
 function propose(
@@ -104,3 +111,37 @@ function q(
 )
     return q(proposal(t_cond), t, t_cond)
 end
+
+"""
+    logratio_proposal_density(proposal, state, candidate)
+
+Compute the log-ratio of the proposal densities in the Metropolis-Hastings algorithm.
+
+The log-ratio of the proposal densities is defined as
+```math
+\\log \\frac{g(x | x')}{g(x' | x)},
+```
+where ``x`` is the current state, ``x'`` is the proposed candidate for the next state,
+and ``g(y' | y)`` is the conditional probability of proposing state ``y'`` given state
+``y`` (proposal density).
+"""
+function logratio_proposal_density(proposal::Proposal, state, candidate)
+    return q(proposal, state, candidate) - q(proposal, candidate, state)
+end
+
+# ratio is always 0 for symmetric random walk proposals
+logratio_proposal_density(::RandomWalkProposal{true}, state, candidate) = 0
+
+function logratio_proposal_density(proposals::NamedTuple, states, candidates)
+    return sum(keys(proposals)) do key
+        return logratio_proposal_density(proposals[key], states[key], candidates[key])
+    end
+end
+
+# fallback for iterators (arrays, tuples, etc.)
+function logratio_proposal_density(proposals, states, candidates)
+    return sum(zip(proposals, states, candidates)) do (proposal, state, candidate)
+        return logratio_proposal_density(proposal, state, candidate)
+    end
+end
+        
