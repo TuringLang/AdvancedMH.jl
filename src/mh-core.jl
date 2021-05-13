@@ -20,7 +20,7 @@ Other allowed proposals are
 ```
 p1 = StaticProposal(Normal(0,1))
 p2 = StaticProposal([Normal(0,1), InverseGamma(2,3)])
-p3 = StaticProposal(a=Normal(0,1), b=InverseGamma(2,3))
+p3 = StaticProposal((a=Normal(0,1), b=InverseGamma(2,3)))
 p4 = StaticProposal((x=1.0) -> Normal(x, 1))
 ```
 
