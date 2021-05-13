@@ -45,6 +45,11 @@ function q(
     return q(spl.proposal(-t_cond.gradient), t.params, t_cond.params)
 end
 
+function logratio_proposal_density(
+    sampler::MALA{<:Proposal}, state::GradientTransition, candidate::GradientTransition
+)
+    return q(sampler, state, candidate) - q(sampler, candidate, state)
+end
 
 """
     logdensity_and_gradient(model::DensityModel, params)

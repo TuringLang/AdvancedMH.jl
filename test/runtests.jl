@@ -121,28 +121,76 @@ include("util.jl")
         @test chain1[1].params == val
     end
 
-    @testset "is_symmetric_proposal" begin
+    @testset "symmetric proposals" begin
         # True distributions
         d1 = Normal(5, .7)
 
         # Model definition.
         m1 = DensityModel(x -> logpdf(d1, x))
 
-        # Set up the proposal (StandardNormal is a custom distribution in "util.jl").
-        p1 = RandomWalkProposal(StandardNormal())
+        # Custom normal distribution without `logpdf` defined errors since the
+        # acceptance probability cannot be computed
+        p1 = RandomWalkProposal(CustomNormal())
+        @test p1 isa RandomWalkProposal{false}
+        @test_throws MethodError AdvancedMH.logratio_proposal_density(p1, randn(), randn())
+        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10)
 
-        # Implement `is_symmetric_proposal` for StandardNormal random walk proposal.
-        AdvancedMH.is_symmetric_proposal(::RandomWalkProposal{<:StandardNormal}) = true
+        p1 = StaticProposal(x -> CustomNormal(x))
+        @test p1 isa StaticProposal{false}
+        @test_throws MethodError AdvancedMH.logratio_proposal_density(p1, randn(), randn())
+        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10)
 
-        # Make sure `is_symmetric_proposal` behaves correctly.
-        @test AdvancedMH.is_symmetric_proposal(p1)
+        # If the proposal is declared to be symmetric, the log ratio of the proposal
+        # density is not evaluated.
+        p2 = SymmetricRandomWalkProposal(CustomNormal())
+        @test p2 isa RandomWalkProposal{true}
+        p2 = SymmetricStaticProposal(x -> CustomNormal(x))
+        @test p2 isa StaticProposal{true}
 
-        # Sample from the posterior with initial parameters.
-        chain1 = sample(m1, MetropolisHastings(p1), 100000;
-                        chain_type=StructArray, param_names=["x"])
+        for p2 in (
+            SymmetricRandomWalkProposal(CustomNormal()),
+            SymmetricStaticProposal((x=0) -> CustomNormal(x)),
+        )
+            @test iszero(AdvancedMH.logratio_proposal_density(p2, randn(), randn()))
+            @test iszero(AdvancedMH.logratio_proposal_density([p2], randn(1), randn(1)))
+            @test iszero(AdvancedMH.logratio_proposal_density(
+                (p2,), (randn(),), (randn(),)
+            ))
+            @test iszero(AdvancedMH.logratio_proposal_density(
+                (; x=p2), (; x=randn()), (; x=randn())
+            ))
+            chain1 = sample(
+                m1, MetropolisHastings(p2), 100000;
+                chain_type=StructArray, param_names=["x"]
+            )
+            @test mean(chain1.x) ≈ mean(d1) atol=0.05
+            @test std(chain1.x) ≈ std(d1) atol=0.05
+        end
 
-        @test mean(chain1.x) ≈ mean(d1) atol=0.05
-        @test std(chain1.x) ≈ std(d1) atol=0.05
+        # type inference checks (arrays of proposals are not guaranteed to be type stable)
+        proposals = (
+            StaticProposal(Normal()),
+            StaticProposal(x -> Normal(x, 1)),
+            StaticProposal{true}(Cauchy()),
+            StaticProposal{true}(x -> Cauchy(x, 2)),
+            RandomWalkProposal(Laplace()),
+            RandomWalkProposal(x -> Laplace(x, 1)),
+            RandomWalkProposal{true}(TDist(1)),
+            RandomWalkProposal{true}(x -> TDist(1)),
+        )
+        states = randn(2)
+        candidates = randn(2)
+        for (p1, p2) in Iterators.product(proposals, proposals)
+            val = AdvancedMH.logratio_proposal_density(p1, states[1], candidates[1]) +
+                AdvancedMH.logratio_proposal_density(p2, states[2], candidates[2])
+            @test AdvancedMH.logratio_proposal_density([p1, p2], states, candidates) ≈ val
+            @test @inferred AdvancedMH.logratio_proposal_density(
+                (p1, p2), (states[1], states[2]), (candidates[1], candidates[2])
+            ) ≈ val
+            @test @inferred AdvancedMH.logratio_proposal_density(
+                (x=p1, y=p2), (y=states[2], x=states[1]), (x=candidates[1], y=candidates[2])
+            ) ≈ val
+        end
     end
 
     @testset "MALA" begin
