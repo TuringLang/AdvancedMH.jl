@@ -15,10 +15,6 @@ struct RandomWalkProposal{issymmetric,P} <: Proposal{P}
 end
 const SymmetricRandomWalkProposal{P} = RandomWalkProposal{true,P}
 
-is_symmetric_proposal(proposal) = false
-is_symmetric_proposal(::RandomWalkProposal{true}) = true
-is_symmetric_proposal(::StaticProposal{true}) = true
-
 RandomWalkProposal(proposal) = RandomWalkProposal{false}(proposal)
 function RandomWalkProposal{issymmetric}(proposal) where {issymmetric}
     return RandomWalkProposal{issymmetric,typeof(proposal)}(proposal)
