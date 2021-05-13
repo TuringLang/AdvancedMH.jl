@@ -121,36 +121,51 @@ include("util.jl")
         @test chain1[1].params == val
     end
 
-    @testset "symmetric random walk" begin
+    @testset "symmetric proposals" begin
         # True distributions
         d1 = Normal(5, .7)
 
         # Model definition.
         m1 = DensityModel(x -> logpdf(d1, x))
 
-        # Custom standard normal distribution without `logpdf` defined errors since the
+        # Custom normal distribution without `logpdf` defined errors since the
         # acceptance probability cannot be computed
-        p1 = RandomWalkProposal(StandardNormal())
+        p1 = RandomWalkProposal(CustomNormal())
         @test p1 isa RandomWalkProposal{false}
         @test_throws MethodError AdvancedMH.logratio_proposal_density(p1, randn(), randn())
         @test_throws MethodError sample(m1, MetropolisHastings(p1), 10)
 
-        # If the random walk is declared to be symmetric, the log ratio of the proposal
+        p1 = StaticProposal(x -> CustomNormal(x))
+        @test p1 isa StaticProposal{false}
+        @test_throws MethodError AdvancedMH.logratio_proposal_density(p1, randn(), randn())
+        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10)
+
+        # If the proposal is declared to be symmetric, the log ratio of the proposal
         # density is not evaluated.
-        p2 = RandomWalkProposal{true}(StandardNormal())
+        p2 = SymmetricRandomWalkProposal(CustomNormal())
         @test p2 isa RandomWalkProposal{true}
-        @test iszero(AdvancedMH.logratio_proposal_density(p2, randn(), randn()))
-        @test iszero(AdvancedMH.logratio_proposal_density([p2], randn(1), randn(1)))
-        @test iszero(AdvancedMH.logratio_proposal_density((p2,), (randn(),), (randn(),)))
-        @test iszero(AdvancedMH.logratio_proposal_density(
-            (; x=p2), (; x=randn()), (; x=randn())
-        ))
-        chain1 = sample(
-            m1, MetropolisHastings(p2), 100000;
-            chain_type=StructArray, param_names=["x"]
+        p2 = SymmetricStaticProposal(x -> CustomNormal(x))
+        @test p2 isa StaticProposal{true}
+
+        for p2 in (
+            SymmetricRandomWalkProposal(CustomNormal()),
+            SymmetricStaticProposal((x=0) -> CustomNormal(x)),
         )
-        @test mean(chain1.x) ≈ mean(d1) atol=0.05
-        @test std(chain1.x) ≈ std(d1) atol=0.05
+            @test iszero(AdvancedMH.logratio_proposal_density(p2, randn(), randn()))
+            @test iszero(AdvancedMH.logratio_proposal_density([p2], randn(1), randn(1)))
+            @test iszero(AdvancedMH.logratio_proposal_density(
+                (p2,), (randn(),), (randn(),)
+            ))
+            @test iszero(AdvancedMH.logratio_proposal_density(
+                (; x=p2), (; x=randn()), (; x=randn())
+            ))
+            chain1 = sample(
+                m1, MetropolisHastings(p2), 100000;
+                chain_type=StructArray, param_names=["x"]
+            )
+            @test mean(chain1.x) ≈ mean(d1) atol=0.05
+            @test std(chain1.x) ≈ std(d1) atol=0.05
+        end
     end
 
     @testset "MALA" begin

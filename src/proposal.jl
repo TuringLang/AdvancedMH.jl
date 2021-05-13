@@ -1,12 +1,23 @@
 abstract type Proposal{P} end
 
-struct StaticProposal{P} <: Proposal{P}
+struct StaticProposal{issymmetric,P} <: Proposal{P}
     proposal::P
+end
+const SymmetricStaticProposal{P} = StaticProposal{true,P}
+
+StaticProposal(proposal) = StaticProposal{false}(proposal)
+function StaticProposal{issymmetric}(proposal) where {issymmetric}
+    return StaticProposal{issymmetric,typeof(proposal)}(proposal)
 end
 
 struct RandomWalkProposal{issymmetric,P} <: Proposal{P}
     proposal::P
 end
+const SymmetricRandomWalkProposal{P} = RandomWalkProposal{true,P}
+
+is_symmetric_proposal(proposal) = false
+is_symmetric_proposal(::RandomWalkProposal{true}) = true
+is_symmetric_proposal(::StaticProposal{true}) = true
 
 RandomWalkProposal(proposal) = RandomWalkProposal{false}(proposal)
 function RandomWalkProposal{issymmetric}(proposal) where {issymmetric}
@@ -31,24 +42,28 @@ end
 # Random Walk #
 ###############
 
-function propose(rng::Random.AbstractRNG, p::RandomWalkProposal, m::DensityModel)
-    return propose(rng, StaticProposal(p.proposal), m)
+function propose(
+    rng::Random.AbstractRNG,
+    proposal::RandomWalkProposal{issymmetric,<:Union{Distribution,AbstractArray}},
+    ::DensityModel
+) where {issymmetric}
+    return rand(rng, proposal)
 end
 
 function propose(
     rng::Random.AbstractRNG,
-    proposal::RandomWalkProposal,
-    model::DensityModel, 
+    proposal::RandomWalkProposal{issymmetric,<:Union{Distribution,AbstractArray}},
+    model::DensityModel,
     t
-)
+) where {issymmetric}
     return t + rand(rng, proposal)
 end
 
 function q(
-    proposal::RandomWalkProposal,
+    proposal::RandomWalkProposal{issymmetric,<:Union{Distribution,AbstractArray}},
     t,
     t_cond
-)
+) where {issymmetric}
     return logpdf(proposal, t - t_cond)
 end
 
@@ -58,18 +73,18 @@ end
 
 function propose(
     rng::Random.AbstractRNG,
-    proposal::StaticProposal{<:Union{Distribution,AbstractArray}},
+    proposal::StaticProposal{issymmetric,<:Union{Distribution,AbstractArray}},
     model::DensityModel,
     t=nothing
-)
+) where {issymmetric}
     return rand(rng, proposal)
 end
 
 function q(
-    proposal::StaticProposal{<:Union{Distribution,AbstractArray}},
+    proposal::StaticProposal{issymmetric,<:Union{Distribution,AbstractArray}},
     t,
     t_cond
-)
+) where {issymmetric}
     return logpdf(proposal, t)
 end
 
@@ -78,13 +93,15 @@ end
 ############
 
 # function definition with abstract types requires Julia 1.3 or later
-(p::StaticProposal{<:Function})() = StaticProposal(p.proposal())
-(p::StaticProposal{<:Function})(t) = StaticProposal(p.proposal(t))
-function (p::RandomWalkProposal{issymmetric,<:Function})() where {issymmetric}
-    return RandomWalkProposal{issymmetric}(p.proposal())
-end
-function (p::RandomWalkProposal{issymmetric,<:Function})(t) where {issymmetric}
-    return RandomWalkProposal{issymmetric}(p.proposal(t))
+for T in (:StaticProposal, :RandomWalkProposal)
+    @eval begin
+        function (p::$T{issymmetric,<:Function})() where {issymmetric}
+            return $T{issymmetric}(p.proposal())
+        end
+        function (p::$T{issymmetric,<:Function})(t) where {issymmetric}
+            return $T{issymmetric}(p.proposal(t))
+        end
+    end
 end
 
 function propose(
@@ -129,8 +146,9 @@ function logratio_proposal_density(proposal::Proposal, state, candidate)
     return q(proposal, state, candidate) - q(proposal, candidate, state)
 end
 
-# ratio is always 0 for symmetric random walk proposals
+# ratio is always 0 for symmetric proposals
 logratio_proposal_density(::RandomWalkProposal{true}, state, candidate) = 0
+logratio_proposal_density(::StaticProposal{true}, state, candidate) = 0
 
 function logratio_proposal_density(proposals::NamedTuple, states, candidates)
     return sum(keys(proposals)) do key
@@ -144,4 +162,10 @@ function logratio_proposal_density(proposals, states, candidates)
         return logratio_proposal_density(proposal, state, candidate)
     end
 end
-        
+
+function logratio_proposal_density(proposals::Tuple, states::Tuple, candidates::Tuple)
+    return logratio_proposal_density(first(proposals), first(states), first(candidates)) +
+        logratio_proposal_density(Base.tail(proposals), Base.tail(states), Base.tail(candidates))
+end
+logratio_proposal_density(proposals::Tuple{<:Proposal}, states::Tuple, candidates::Tuple) =
+    logratio_proposal_density(first(proposals), first(states), first(candidates))

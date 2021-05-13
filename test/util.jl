@@ -1,3 +1,7 @@
-# Define a (custom) Standard Normal distribution, for illustrative puspose.
-struct StandardNormal <: Distributions.ContinuousUnivariateDistribution end
-Distributions.rand(rng::AbstractRNG, ::StandardNormal) = randn(Random.GLOBAL_RNG)
+# Define a custom Normal distribution, for illustrative puspose.
+struct CustomNormal{T<:Real} <: Distributions.ContinuousUnivariateDistribution
+    m::T
+end
+CustomNormal() = CustomNormal(0)
+
+Distributions.rand(rng::AbstractRNG, d::CustomNormal) = d.m + randn(rng)
