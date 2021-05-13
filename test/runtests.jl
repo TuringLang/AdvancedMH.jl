@@ -166,6 +166,31 @@ include("util.jl")
             @test mean(chain1.x) ≈ mean(d1) atol=0.05
             @test std(chain1.x) ≈ std(d1) atol=0.05
         end
+
+        # type inference checks (arrays of proposals are not guaranteed to be type stable)
+        proposals = (
+            StaticProposal(Normal()),
+            StaticProposal(x -> Normal(x, 1)),
+            StaticProposal{true}(Cauchy()),
+            StaticProposal{true}(x -> Cauchy(x, 2)),
+            RandomWalkProposal(Laplace()),
+            RandomWalkProposal(x -> Laplace(x, 1)),
+            RandomWalkProposal{true}(TDist(1)),
+            RandomWalkProposal{true}(x -> TDist(1)),
+        )
+        states = randn(2)
+        candidates = randn(2)
+        for (p1, p2) in Iterators.product(proposals, proposals)
+            val = AdvancedMH.logratio_proposal_density(p1, states[1], candidates[1]) +
+                AdvancedMH.logratio_proposal_density(p2, states[2], candidates[2])
+            @test AdvancedMH.logratio_proposal_density([p1, p2], states, candidates) ≈ val
+            @test @inferred AdvancedMH.logratio_proposal_density(
+                (p1, p2), (states[1], states[2]), (candidates[1], candidates[2])
+            ) ≈ val
+            @test @inferred AdvancedMH.logratio_proposal_density(
+                (x=p1, y=p2), (y=states[2], x=states[1]), (x=candidates[1], y=candidates[2])
+            ) ≈ val
+        end
     end
 
     @testset "MALA" begin

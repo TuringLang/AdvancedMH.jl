@@ -150,22 +150,46 @@ end
 logratio_proposal_density(::RandomWalkProposal{true}, state, candidate) = 0
 logratio_proposal_density(::StaticProposal{true}, state, candidate) = 0
 
-function logratio_proposal_density(proposals::NamedTuple, states, candidates)
-    return sum(keys(proposals)) do key
-        return logratio_proposal_density(proposals[key], states[key], candidates[key])
+# type stable implementation for `NamedTuple`s
+function logratio_proposal_density(
+    proposals::NamedTuple{names}, states::NamedTuple, candidates::NamedTuple
+) where {names}
+    if @generated
+        args = map(names) do name
+            :(logratio_proposal_density(
+                proposals[$(QuoteNode(name))],
+                states[$(QuoteNode(name))],
+                candidates[$(QuoteNode(name))],
+            ))
+        end
+        return :(+($(args...)))
+    else
+        return sum(names) do name
+            return logratio_proposal_density(
+                proposals[name], states[name], candidates[name]
+            )
+        end
     end
 end
 
-# fallback for iterators (arrays, tuples, etc.)
+# use recursion for `Tuple`s to ensure type stability
+logratio_proposal_density(proposals::Tuple{}, states::Tuple, candidates::Tuple) = 0
+function logratio_proposal_density(
+    proposals::Tuple{<:Proposal}, states::Tuple, candidates::Tuple
+)
+    return logratio_proposal_density(first(proposals), first(states), first(candidates))
+end
+function logratio_proposal_density(proposals::Tuple, states::Tuple, candidates::Tuple)
+    valfirst = logratio_proposal_density(first(proposals), first(states), first(candidates))
+    valtail = logratio_proposal_density(
+        Base.tail(proposals), Base.tail(states), Base.tail(candidates)
+    )
+    return valfirst + valtail
+end
+
+# fallback for general iterators (arrays etc.) - possibly not type stable!
 function logratio_proposal_density(proposals, states, candidates)
     return sum(zip(proposals, states, candidates)) do (proposal, state, candidate)
         return logratio_proposal_density(proposal, state, candidate)
     end
 end
-
-function logratio_proposal_density(proposals::Tuple, states::Tuple, candidates::Tuple)
-    return logratio_proposal_density(first(proposals), first(states), first(candidates)) +
-        logratio_proposal_density(Base.tail(proposals), Base.tail(states), Base.tail(candidates))
-end
-logratio_proposal_density(proposals::Tuple{<:Proposal}, states::Tuple, candidates::Tuple) =
-    logratio_proposal_density(first(proposals), first(states), first(candidates))
