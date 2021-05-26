@@ -160,9 +160,9 @@ end
     return expr
 end
 
-@generated function _propose(
+@generated function propose(
     rng::Random.AbstractRNG,
-    proposal::NamedTuple{names},
+    proposals::NamedTuple{names},
     model::DensityModel,
     ts,
 ) where {names}
