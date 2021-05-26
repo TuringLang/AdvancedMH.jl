@@ -28,7 +28,7 @@ end
 logratio_proposal_density(::AMProposal, params_prev, params) = 0
 
 # When the proposal is initialised the empirical posterior covariance is zero
-function trackstep(proposal::AMProposal, params)
+function trackstep!(proposal::AMProposal, params)
     proposal.μ .= params
     proposal.M .= 0
     proposal.proposal = MvNormal(zeros(size(proposal.μ)), proposal.epsilon)
@@ -36,7 +36,7 @@ function trackstep(proposal::AMProposal, params)
 end
 
 # Recompute the empirical posterior covariance matrix
-function trackstep(proposal::AMProposal, params, ::Union{Val{true}, Val{false}})
+function trackstep!(proposal::AMProposal, params, ::Union{Val{true}, Val{false}})
     proposal.N += 1
     proposal.δ .= params .- proposal.μ
     proposal.μ .+= proposal.δ ./ proposal.N
