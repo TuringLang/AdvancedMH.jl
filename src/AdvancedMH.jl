@@ -5,6 +5,7 @@ using AbstractMCMC
 using Distributions
 using Requires
 using LinearAlgebra
+using PDMats
 
 import Random
 
