@@ -69,16 +69,12 @@ transition(model, params) = Transition(model, params)
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModel,
-    spl::MHSampler;
+    sampler::MHSampler;
     init_params=nothing,
     kwargs...
 )
-    if init_params === nothing
-        transition = propose(rng, spl, model)
-    else
-        transition = AdvancedMH.transition(spl, model, init_params)
-    end
-
+    params = init_params === nothing ? propose(rng, sampler, model) : init_params
+    transition = AdvancedMH.transition(sampler, model, params)
     return transition, transition
 end
 
