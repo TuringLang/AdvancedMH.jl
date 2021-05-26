@@ -55,13 +55,18 @@ function propose(
     rng::Random.AbstractRNG,
     sampler::MHSampler,
     model::DensityModel,
-    params_prev::Transition,
+    transition_prev::Transition,
 )
-    return propose(rng, sampler.proposal, model, params_prev.params)
+    return propose(rng, sampler.proposal, model, transition_prev.params)
 end
 
-transition(sampler, model, params) = transition(model, params)
-transition(model, params) = Transition(model, params)
+function transition(sampler::MHSampler, model::DensityModel, params)
+    logdensity = AdvancedMH.logdensity(model, params)
+    return transition(sampler, model, params, logdensity)
+end
+function transition(sampler::MHSampler, model::DensityModel, params, logdensity::Real)
+    return Transition(params, logdensity)
+end
 
 # Define the first sampling step.
 # Return a 2-tuple consisting of the initial sample and the initial state.
@@ -85,30 +90,42 @@ end
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModel,
-    spl::MHSampler,
-    params_prev::Transition;
+    sampler::MHSampler,
+    transition_prev::AbstractTransition;
     kwargs...
 )
     # Generate a new proposal.
-    candidate = propose(rng, spl, model, params_prev)
+    candidate = propose(rng, sampler, model, transition_prev)
 
-    # Calculate the log acceptance probability.
-    logdensity_candidate = logdensity(model, candidate)
-    logα = logdensity_candidate - logdensity(model, params_prev) +
-        logratio_proposal_density(spl, params_prev, candidate)
+    # Calculate the log acceptance probability and the log density of the candidate.
+    logα, logdensity_candidate = logacceptance_logdensity(
+        sampler, model, transition_prev, candidate
+    )
 
     # Decide whether to return the previous params or the new one.
-    params = if -Random.randexp(rng) < logα
-        Transition(candidate, logdensity_candidate)
+    transition = if -Random.randexp(rng) < logα
+        AdvancedMH.transition(sampler, model, candidate, logdensity_candidate)
     else
-        params_prev
+        transition_prev
     end
 
-    return params, params
+    return transition, transition
+end
+
+function logacceptance_logdensity(
+    sampler::MHSampler,
+    model::DensityModel,
+    transition_prev::AbstractTransition,
+    candidate,
+)
+    logdensity_candidate = logdensity(model, candidate)
+    logα = logdensity_candidate - logdensity(model, transition_prev) +
+        logratio_proposal_density(sampler, transition_prev, candidate)
+    return logα, logdensity_candidate
 end
 
 function logratio_proposal_density(
-    sampler::MetropolisHastings, params_prev::Transition, candidate
+    sampler::MetropolisHastings, transition_prev::AbstractTransition, candidate
 )
-    return logratio_proposal_density(sampler.proposal, params_prev.params, candidate)
+    return logratio_proposal_density(sampler.proposal, transition_prev.params, candidate)
 end
