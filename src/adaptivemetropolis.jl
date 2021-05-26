@@ -15,6 +15,7 @@ function propose(rng::Random.AbstractRNG, spl::AMSampler{<:Proposal}, model::Den
     return Transition(model, proposal)
 end
 
+# Same as for MetropolisHastings, but with a `trackstep` callback
 function AbstractMCMC.step(rng::Random.AbstractRNG, model::DensityModel, spl::AMSampler;
                            init_params=nothing, kwargs...)
     if init_params === nothing
@@ -27,6 +28,7 @@ function AbstractMCMC.step(rng::Random.AbstractRNG, model::DensityModel, spl::AM
     return transition, transition
 end
 
+# Same as for MetropolisHastings but with a `trackstep` callback
 function AbstractMCMC.step(rng::Random.AbstractRNG, model::DensityModel, spl::AMSampler,
                            params_prev::AbstractTransition; kwargs...)
     # Generate a new proposal.
@@ -53,9 +55,13 @@ trackstep(proposal::Proposal, params::Transition) = nothing
 trackstep(proposal::Proposal, params::Transition, 
           ::Union{Val{true}, Val{false}}) = nothing
 
+function logratio_proposal_density(sampler::AMSampler, params_prev::Transition, params::Transition)
+    return logratio_proposal_density(sampler.proposal, params_prev.params, params.params)
+end
+
 # Simple Adaptive Metropolis Proposal
 # The proposal at each step is equal to a scalar multiple
-# of the posterior covariance plus a fixed, small covariance
+# of the empirical posterior covariance plus a fixed, small covariance
 # matrix epsilon which is also used for initial exploration.
 mutable struct AMProposal <: Proposal{MvNormal}
     epsilon::Symmetric
@@ -72,12 +78,9 @@ function AMProposal(epsilon::AbstractMatrix, scalefactor=2.38^2 / size(epsilon, 
     AMProposal(sym, scalefactor, proposal, mean(proposal), zeros(size(sym)...), 0)
 end
 
-function logratio_proposal_density(sampler::AMSampler, params_prev::Transition, params::Transition)
-    return logratio_proposal_density(sampler.proposal, params_prev.params, params.params)
-end
-
 logratio_proposal_density(::AMProposal, params_prev, params) = 0
 
+# When the proposal is initialised the empirical posterior covariance is zero
 function trackstep(proposal::AMProposal, trans::Transition)
     proposal.samplemean = copy(trans.params)
     proposal.samplesqmean = trans.params * trans.params'
@@ -85,6 +88,7 @@ function trackstep(proposal::AMProposal, trans::Transition)
     proposal.N = 1
 end
 
+# Recompute the empirical posterior covariance matrix
 function trackstep(proposal::AMProposal, trans::Transition, ::Union{Val{true}, Val{false}})
     proposal.samplemean = (proposal.samplemean .* proposal.N .+ trans.params) ./ (proposal.N + 1)
 
