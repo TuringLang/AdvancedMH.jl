@@ -63,6 +63,10 @@ end
 # The proposal at each step is equal to a scalar multiple
 # of the empirical posterior covariance plus a fixed, small covariance
 # matrix epsilon which is also used for initial exploration.
+# 
+# Reference:
+#   H. Haario, E. Saksman, and J. Tamminen, "An adaptive Metropolis algorithm",
+#   Bernoulli 7(2): 223-242 (2001)
 mutable struct AMProposal{FT <: Real, CT <: AbstractMatrix{FT}, 
                           MNT <: AbstractMvNormal} <: Proposal{MNT}
     epsilon::CT
