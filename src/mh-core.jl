@@ -48,94 +48,16 @@ end
 StaticMH(d) = MetropolisHastings(StaticProposal(d))
 RWMH(d) = MetropolisHastings(RandomWalkProposal(d))
 
-# default function without RNG
-propose(spl::MetropolisHastings, args...) = propose(Random.GLOBAL_RNG, spl, args...)
-
-# Propose from a vector of proposals
-function propose(
-    rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:AbstractArray},
-    model::DensityModel
-)
-    proposal = map(p -> propose(rng, p, model), spl.proposal)
-    return Transition(model, proposal)
+function propose(rng::Random.AbstractRNG, sampler::MHSampler, model::DensityModel)
+    return propose(rng, sampler.proposal, model)
 end
-
 function propose(
     rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:AbstractArray},
+    sampler::MHSampler,
     model::DensityModel,
-    params_prev::Transition
+    params_prev::Transition,
 )
-    proposal = map(spl.proposal, params_prev.params) do p, params
-        propose(rng, p, model, params)
-    end
-    return Transition(model, proposal)
-end
-
-# Make a proposal from one Proposal struct.
-function propose(
-    rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:Proposal},
-    model::DensityModel
-)
-    proposal = propose(rng, spl.proposal, model)
-    return Transition(model, proposal)
-end
-
-function propose(
-    rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:Proposal},
-    model::DensityModel,
-    params_prev::Transition
-)
-    proposal = propose(rng, spl.proposal, model, params_prev.params)
-    return Transition(model, proposal)
-end
-
-# Make a proposal from a NamedTuple of Proposal.
-function propose(
-    rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:NamedTuple},
-    model::DensityModel
-)
-    proposal = _propose(rng, spl.proposal, model)
-    return Transition(model, proposal)
-end
-
-function propose(
-    rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:NamedTuple},
-    model::DensityModel,
-    params_prev::Transition
-)
-    proposal = _propose(rng, spl.proposal, model, params_prev.params)
-    return Transition(model, proposal)
-end
-
-@generated function _propose(
-    rng::Random.AbstractRNG,
-    proposal::NamedTuple{names},
-    model::DensityModel
-) where {names}
-    isempty(names) && return :(NamedTuple())
-    expr = Expr(:tuple)
-    expr.args = Any[:($name = propose(rng, proposal.$name, model)) for name in names]
-    return expr
-end
-
-@generated function _propose(
-    rng::Random.AbstractRNG,
-    proposal::NamedTuple{names},
-    model::DensityModel,
-    params_prev::NamedTuple
-) where {names}
-    isempty(names) && return :(NamedTuple())
-    expr = Expr(:tuple)
-    expr.args = Any[
-        :($name = propose(rng, proposal.$name, model, params_prev.$name)) for name in names
-    ]
-    return expr
+    return propose(rng, sampler.proposal, model, params_prev.params)
 end
 
 transition(sampler, model, params) = transition(model, params)
@@ -168,26 +90,29 @@ function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModel,
     spl::MHSampler,
-    params_prev::AbstractTransition;
+    params_prev::Transition;
     kwargs...
 )
     # Generate a new proposal.
-    params = propose(rng, spl, model, params_prev)
+    candidate = propose(rng, spl, model, params_prev)
 
     # Calculate the log acceptance probability.
-    logα = logdensity(model, params) - logdensity(model, params_prev) +
-        logratio_proposal_density(spl, params_prev, params)
+    logdensity_candidate = logdensity(model, candidate)
+    logα = logdensity_candidate - logdensity(model, params_prev) +
+        logratio_proposal_density(spl, params_prev, candidate)
 
     # Decide whether to return the previous params or the new one.
-    if -Random.randexp(rng) < logα
-        return params, params
+    params = if -Random.randexp(rng) < logα
+        Transition(candidate, logdensity_candidate)
     else
-        return params_prev, params_prev
+        params_prev
     end
+
+    return params, params
 end
 
 function logratio_proposal_density(
-    sampler::MetropolisHastings, params_prev::Transition, params::Transition
+    sampler::MetropolisHastings, params_prev::Transition, candidate
 )
-    return logratio_proposal_density(sampler.proposal, params_prev.params, params.params)
+    return logratio_proposal_density(sampler.proposal, params_prev.params, candidate)
 end
