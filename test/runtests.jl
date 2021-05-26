@@ -25,6 +25,18 @@ include("util.jl")
     # Construct a DensityModel.
     model = DensityModel(density)
 
+    @testset "AdaptiveMH" begin
+        # Set up our sampler with initial parameters.
+        spl = AMSampler(AMProposal([0.01 0. ; 0. 0.01]))
+
+        # Sample from the posterior.
+        chain = sample(model, spl, 100000; chain_type=StructArray, param_names=["μ", "σ"])
+
+        # chn_mean ≈ dist_mean atol=atol_v
+        @test mean(chain.μ) ≈ 0.0 atol=0.1
+        @test mean(chain.σ) ≈ 1.0 atol=0.1
+    end
+
     @testset "StaticMH" begin
         # Set up our sampler with initial parameters.
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
@@ -207,5 +219,4 @@ include("util.jl")
     end
 
     @testset "EMCEE" begin include("emcee.jl") end
-  
 end
