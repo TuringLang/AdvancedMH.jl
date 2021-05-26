@@ -98,9 +98,9 @@ function AbstractMCMC.step(
     candidate = propose(rng, sampler, model, transition_prev)
 
     # Calculate the log acceptance probability and the log density of the candidate.
-    logα, logdensity_candidate = logacceptance_logdensity(
-        sampler, model, transition_prev, candidate
-    )
+    logdensity_candidate = logdensity(model, candidate)
+    logα = logdensity_candidate - logdensity(model, transition_prev) +
+        logratio_proposal_density(sampler, transition_prev, candidate)
 
     # Decide whether to return the previous params or the new one.
     transition = if -Random.randexp(rng) < logα
@@ -110,18 +110,6 @@ function AbstractMCMC.step(
     end
 
     return transition, transition
-end
-
-function logacceptance_logdensity(
-    sampler::MHSampler,
-    model::DensityModel,
-    transition_prev::AbstractTransition,
-    candidate,
-)
-    logdensity_candidate = logdensity(model, candidate)
-    logα = logdensity_candidate - logdensity(model, transition_prev) +
-        logratio_proposal_density(sampler, transition_prev, candidate)
-    return logα, logdensity_candidate
 end
 
 function logratio_proposal_density(
