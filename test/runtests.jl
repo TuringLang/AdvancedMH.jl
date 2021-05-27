@@ -64,9 +64,9 @@ include("util.jl")
         doubledensity(θ::Vector{Vector{Float64}}) = density(θ[1]) + density(θ[2])
         doublemodel = DensityModel(doubledensity)
 
-        spl1 = MetropolisHastings(AMProposal(diagm([0.01, 0.01, 0.01, 0.01])))
-        spl2 = MetropolisHastings([AMProposal(diagm([0.01, 0.01])), 
-                                   AMProposal(diagm([0.01, 0.01]))])
+        spl1 = MetropolisHastings(AMProposal(diagm(0 => [0.01, 0.01, 0.01, 0.01])))
+        spl2 = MetropolisHastings([AMProposal(diagm(0 => [0.01, 0.01])), 
+                                   AMProposal(diagm(0 => [0.01, 0.01]))])
 
         # Sample from the posterior.
         chain1 = sample(doublemodel, spl1, 100000; chain_type=StructArray, 
