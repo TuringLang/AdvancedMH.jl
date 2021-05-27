@@ -135,7 +135,6 @@ include("util.jl")
         @test keys(c3[1]) == (:a, :b, :lp)
         @test keys(c4[1]) == (:param_1, :lp)
     end
-    
     @testset "Initial parameters" begin
         # Set up our sampler with initial parameters.
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])

@@ -17,8 +17,9 @@ mutable struct AMProposal{FT <: Real, CT <: AbstractMatrix{FT},
     N::Int
 end
 
-function AMProposal(epsilon::AbstractMatrix{FT}, 
-                    scalefactor=FT(2.38^2 / size(epsilon, 1))) where {FT <: Real}
+function AMProposal(
+    epsilon::AbstractMatrix{FT}, scalefactor=FT(2.38^2 / size(epsilon, 1))
+) where {FT <: Real}
     sym = PDMat(Symmetric(epsilon))
     proposal = MvNormal(zeros(size(sym, 1)), sym)
     AMProposal(sym, scalefactor, proposal, zeros(size(sym,1)), zeros(size(sym)...), 
@@ -41,7 +42,7 @@ function trackstep!(proposal::AMProposal, params, ::Union{Val{true}, Val{false}}
     proposal.δ .= params .- proposal.μ
     proposal.μ .+= proposal.δ ./ proposal.N
 
-    mul!(proposal.M, params .- proposal.μ, proposal.δ', 1.0, 1.0)
+    mul!(proposal.M, params .- proposal.μ, proposal.δ', true, true)
 
     prop_cov = proposal.M .* proposal.scalefactor ./ proposal.N .+ proposal.epsilon
     proposal.proposal = MvNormal(mean(proposal.proposal), Symmetric(prop_cov))

@@ -22,8 +22,7 @@ export
     Ensemble,
     StretchProposal,
     MALA,
-    AMProposal,
-    AMSampler
+    AMProposal
 
 # Reexports
 export sample, MCMCThreads, MCMCDistributed
