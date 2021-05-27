@@ -141,6 +141,22 @@ end
 transition(sampler, model, params) = transition(model, params)
 transition(model, params) = Transition(model, params)
 
+# Called to update proposal when the first sample is drawn
+trackstep!(proposal::Proposal, params) = nothing
+trackstep!(proposal::AbstractArray, params) = foreach(trackstep!, proposal, params)
+trackstep!(proposal::NamedTuple, params) = foreach(trackstep!, proposal, params)
+
+# Called to update proposal when a new step is performed
+# The last argument determines if the step is an acceptance step
+trackstep!(proposal::Proposal, params, 
+           ::Union{Val{true}, Val{false}}) = nothing
+
+trackstep!(proposal::AbstractArray, params, accept::Union{Val{true},Val{false}}) = 
+           foreach((prop, par) -> trackstep!(prop, par, accept), proposal, params)
+
+trackstep!(proposal::NamedTuple, params, accept::Union{Val{true},Val{false}}) = 
+           foreach((prop, par) -> trackstep!(prop, par, accept), proposal, params)
+
 # Define the first sampling step.
 # Return a 2-tuple consisting of the initial sample and the initial state.
 # In this case they are identical.
@@ -157,6 +173,7 @@ function AbstractMCMC.step(
         transition = AdvancedMH.transition(spl, model, init_params)
     end
 
+    trackstep!(spl.proposal, transition.params)
     return transition, transition
 end
 
@@ -180,8 +197,10 @@ function AbstractMCMC.step(
 
     # Decide whether to return the previous params or the new one.
     if -Random.randexp(rng) < logα
+        trackstep!(spl.proposal, params.params, Val(true))
         return params, params
     else
+        trackstep!(spl.proposal, params_prev.params, Val(false))
         return params_prev, params_prev
     end
 end

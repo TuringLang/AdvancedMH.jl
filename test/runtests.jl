@@ -2,6 +2,7 @@ using AdvancedMH
 using Distributions
 using StructArrays
 using MCMCChains
+using LinearAlgebra
 
 using Random
 using Test
@@ -57,6 +58,32 @@ include("util.jl")
         @test mean(chain2.σ) ≈ 1.0 atol=0.1
     end
 
+    @testset "AdaptiveMH" begin
+        # Set up our sampler with initial parameters.
+        doubledensity(θ::Vector{Float64}) = density(θ[1:2]) + density(θ[3:4])
+        doubledensity(θ::Vector{Vector{Float64}}) = density(θ[1]) + density(θ[2])
+        doublemodel = DensityModel(doubledensity)
+
+        spl1 = MetropolisHastings(AMProposal(diagm(0 => [0.01, 0.01, 0.01, 0.01])))
+        spl2 = MetropolisHastings([AMProposal(diagm(0 => [0.01, 0.01])), 
+                                   AMProposal(diagm(0 => [0.01, 0.01]))])
+
+        # Sample from the posterior.
+        chain1 = sample(doublemodel, spl1, 100000; chain_type=StructArray, 
+                        param_names=["μ1", "σ1", "μ2", "σ2"])
+        chain2 = sample(doublemodel, spl2, 100000; chain_type=StructArray, 
+                        param_names=["p1", "p2"])
+
+        # chn_mean ≈ dist_mean atol=atol_v
+        @test mean(chain1.μ1) ≈ 0.0 atol=0.1
+        @test mean(chain1.σ1) ≈ 1.0 atol=0.1
+        @test mean(chain1.μ2) ≈ 0.0 atol=0.1
+        @test mean(chain1.σ2) ≈ 1.0 atol=0.1
+
+        @test mean(chain2.p1) ≈ [ 0.0 1.0 ]' atol=0.1
+        @test mean(chain2.p2) ≈ [ 0.0 1.0 ]' atol=0.1
+    end
+
     @testset "parallel sampling" begin
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
 
@@ -108,7 +135,6 @@ include("util.jl")
         @test keys(c3[1]) == (:a, :b, :lp)
         @test keys(c4[1]) == (:param_1, :lp)
     end
-
     @testset "Initial parameters" begin
         # Set up our sampler with initial parameters.
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
@@ -207,5 +233,4 @@ include("util.jl")
     end
 
     @testset "EMCEE" begin include("emcee.jl") end
-  
 end
