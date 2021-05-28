@@ -125,6 +125,55 @@ function q(
     return q(proposal(t_cond), t, t_cond)
 end
 
+####################
+# Multiple proposals
+####################
+
+function propose(
+    rng::Random.AbstractRNG,
+    proposals::AbstractArray{<:Proposal},
+    model::DensityModel,
+)
+    return map(proposals) do proposal
+        return propose(rng, proposal, model)
+    end
+end
+function propose(
+    rng::Random.AbstractRNG,
+    proposals::AbstractArray{<:Proposal},
+    model::DensityModel,
+    ts,
+)
+    return map(proposals, ts) do proposal, t
+        return propose(rng, proposal, model, t)
+    end
+end
+
+@generated function propose(
+    rng::Random.AbstractRNG,
+    proposals::NamedTuple{names},
+    model::DensityModel,
+) where {names}
+    isempty(names) && return :(NamedTuple())
+    expr = Expr(:tuple)
+    expr.args = Any[:($name = propose(rng, proposals.$name, model)) for name in names]
+    return expr
+end
+
+@generated function propose(
+    rng::Random.AbstractRNG,
+    proposals::NamedTuple{names},
+    model::DensityModel,
+    ts,
+) where {names}
+    isempty(names) && return :(NamedTuple())
+    expr = Expr(:tuple)
+    expr.args = Any[
+        :($name = propose(rng, proposals.$name, model, ts.$name)) for name in names
+    ]
+    return expr
+end
+
 """
     logratio_proposal_density(proposal, state, candidate)
 
