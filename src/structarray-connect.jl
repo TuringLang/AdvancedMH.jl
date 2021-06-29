@@ -2,7 +2,7 @@ import .StructArrays: StructArray
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
-    ts,
+    ts::Vector{<:AbstractTransition},
     model::DensityModel,
     sampler::MHSampler,
     state,
