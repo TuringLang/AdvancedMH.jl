@@ -2,7 +2,7 @@ import .MCMCChains: Chains
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
-    ts::Vector{<:Transition{<:AbstractArray}},
+    ts::Vector{<:AbstractTransition},
     model::DensityModel,
     sampler::MHSampler,
     state,
@@ -63,7 +63,7 @@ function AbstractMCMC.bundle_samples(
 end
 
 function AbstractMCMC.bundle_samples(
-    ts::Vector{<:Vector{<:Transition}},
+    ts::Vector{<:Vector{<:AbstractTransition}},
     model::DensityModel,
     sampler::Ensemble,
     state,
