@@ -7,6 +7,8 @@ function AbstractMCMC.bundle_samples(
     sampler::MHSampler,
     state,
     chain_type::Type{Chains};
+    discard_initial=0,
+    thinning=1,
     param_names=missing,
     kwargs...
 )
@@ -25,7 +27,9 @@ function AbstractMCMC.bundle_samples(
     push!(param_names, :lp)
 
     # Bundle everything up and return a Chains struct.
-    return Chains(vals, param_names, (internals = [:lp],))
+    return Chains(
+        vals, param_names, (internals = [:lp],); start=discard_initial + 1, thin=thinning,
+    )
 end
 
 function AbstractMCMC.bundle_samples(
@@ -34,6 +38,8 @@ function AbstractMCMC.bundle_samples(
     sampler::MHSampler,
     state,
     chain_type::Type{Chains};
+    discard_initial=0,
+    thinning=1,
     param_names=missing,
     kwargs...
 )
@@ -59,7 +65,9 @@ function AbstractMCMC.bundle_samples(
     end
 
     # Bundle everything up and return a Chains struct.
-    return Chains(vals, param_names, (internals = [:lp],))
+    return Chains(
+        vals, param_names, (internals = [:lp],); start=discard_initial + 1, thin=thinning,
+    )
 end
 
 function AbstractMCMC.bundle_samples(
@@ -68,6 +76,8 @@ function AbstractMCMC.bundle_samples(
     sampler::Ensemble,
     state,
     chain_type::Type{Chains};
+    discard_initial=0,
+    thinning=1,
     param_names=missing,
     kwargs...
 )
@@ -100,5 +110,7 @@ function AbstractMCMC.bundle_samples(
     push!(param_names, :lp)
 
     # Bundle everything up and return a Chains struct.
-    return Chains(vals, param_names, (internals=[:lp],))
+    return Chains(
+        vals, param_names, (internals = [:lp],); start=discard_initial + 1, thin=thinning,
+    )
 end
