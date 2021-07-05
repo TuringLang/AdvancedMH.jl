@@ -80,8 +80,18 @@ include("util.jl")
             param_names=["μ", "σ"], chain_type=Chains
         )
         @test chain1 isa Chains
+        @test range(chain1) == 1:10_000
         @test mean(chain1["μ"]) ≈ 0.0 atol=0.1
         @test mean(chain1["σ"]) ≈ 1.0 atol=0.1
+
+        chain1b = sample(
+            model, StaticMH([Normal(0,1), Normal(0, 1)]), 10_000;
+            param_names=["μ", "σ"], chain_type=Chains, discard_initial=25, thinning=4,
+        )
+        @test chain1b isa Chains
+        @test range(chain1b) == range(26; step=4, length=10_000)
+        @test mean(chain1b["μ"]) ≈ 0.0 atol=0.1
+        @test mean(chain1b["σ"]) ≈ 1.0 atol=0.1
 
         # NamedTuple of parameters
         chain2 = sample(
@@ -92,8 +102,21 @@ include("util.jl")
             chain_type=Chains
         )
         @test chain2 isa Chains
+        @test range(chain2) == 1:10_000
         @test mean(chain2["μ"]) ≈ 0.0 atol=0.1
         @test mean(chain2["σ"]) ≈ 1.0 atol=0.1
+
+        chain2b = sample(
+            model,
+            MetropolisHastings(
+                (μ = StaticProposal(Normal(0,1)), σ = StaticProposal(Normal(0, 1)))
+            ), 10_000;
+            chain_type=Chains, discard_initial=25, thinning=4,
+        )
+        @test chain2b isa Chains
+        @test range(chain2b) == range(26; step=4, length=10_000)
+        @test mean(chain2b["μ"]) ≈ 0.0 atol=0.1
+        @test mean(chain2b["σ"]) ≈ 1.0 atol=0.1
 
         # Scalar parameter
         chain3 = sample(
@@ -101,7 +124,17 @@ include("util.jl")
             StaticMH(Normal(0, 1)), 10_000; param_names=["μ"], chain_type=Chains
         )
         @test chain3 isa Chains
+        @test range(chain3) == 1:10_000
         @test mean(chain3["μ"]) ≈ 0.0 atol=0.1
+
+        chain3b = sample(
+            DensityModel(x -> loglikelihood(Normal(x, 1), data)),
+            StaticMH(Normal(0, 1)), 10_000;
+            param_names=["μ"], chain_type=Chains, discard_initial=25, thinning=4,
+        )
+        @test chain3b isa Chains
+        @test range(chain3b) == range(26; step=4, length=10_000)
+        @test mean(chain3b["μ"]) ≈ 0.0 atol=0.1
     end
 
     @testset "Proposal styles" begin
