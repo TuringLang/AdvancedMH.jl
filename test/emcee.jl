@@ -57,7 +57,7 @@
 
             # perform stretch move and sample from normal distribution in initial step
             Random.seed!(100)
-            sampler = Ensemble(1_000, StretchProposal(MvNormal(2, 1)))
+            sampler = Ensemble(1_000, StretchProposal(MvNormal(zeros(2), I)))
             chain = sample(model, sampler, 1_000;
                            param_names = ["logs", "m"], chain_type = Chains)
             @test chain isa Chains
