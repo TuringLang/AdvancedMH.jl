@@ -1,12 +1,13 @@
 using AdvancedMH
+using DiffResults
 using Distributions
-using StructArrays
+using ForwardDiff
 using MCMCChains
+using StructArrays
 
+using LinearAlgebra
 using Random
 using Test
-using DiffResults
-using ForwardDiff
 
 include("util.jl")
 
@@ -28,7 +29,7 @@ include("util.jl")
     @testset "StaticMH" begin
         # Set up our sampler with initial parameters.
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
-        spl2 = StaticMH(MvNormal([0.0, 0.0], 1))
+        spl2 = StaticMH(MvNormal(zeros(2), I))
 
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
@@ -44,7 +45,7 @@ include("util.jl")
     @testset "RandomWalk" begin
         # Set up our sampler with initial parameters.
         spl1 = RWMH([Normal(0,1), Normal(0, 1)])
-        spl2 = RWMH(MvNormal([0.0, 0.0], 1))
+        spl2 = RWMH(MvNormal(zeros(2), I))
 
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
@@ -245,8 +246,8 @@ include("util.jl")
 
     @testset "MALA" begin
         # Set up the sampler.
-        sigma = 1e-1
-        spl1 = MALA(x -> MvNormal((sigma^2 / 2) .* x, sigma))
+        σ² = 0.01
+        spl1 = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
 
         # Sample from the posterior with initial parameters.
         chain1 = sample(model, spl1, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
