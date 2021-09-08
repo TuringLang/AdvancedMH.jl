@@ -23,12 +23,10 @@ function AbstractMCMC.bundle_samples(
         param_names = Symbol.(param_names)
     end
 
-    # Add the log density field to the parameter names.
-    push!(param_names, :lp)
-
     # Bundle everything up and return a Chains struct.
     return Chains(
-        vals, param_names, (internals = [:lp],); start=discard_initial + 1, thin=thinning,
+        vals, vcat(param_names, [:lp]), (parameters = param_names, internals = [:lp],);
+        start=discard_initial + 1, thin=thinning,
     )
 end
 
@@ -66,7 +64,8 @@ function AbstractMCMC.bundle_samples(
 
     # Bundle everything up and return a Chains struct.
     return Chains(
-        vals, param_names, (internals = [:lp],); start=discard_initial + 1, thin=thinning,
+        vals, param_names, (parameters = param_names, internals = [:lp]);
+        start=discard_initial + 1, thin=thinning,
     )
 end
 
@@ -106,11 +105,9 @@ function AbstractMCMC.bundle_samples(
         param_names = Symbol.(param_names)
     end
 
-    # Add the log density field to the parameter names.
-    push!(param_names, :lp)
-
     # Bundle everything up and return a Chains struct.
     return Chains(
-        vals, param_names, (internals = [:lp],); start=discard_initial + 1, thin=thinning,
+        vals, vcat(param_names, [:lp]), (parameters = param_names, internals = [:lp]);
+        start=discard_initial + 1, thin=thinning,
     )
 end
