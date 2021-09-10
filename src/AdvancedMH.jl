@@ -50,7 +50,7 @@ end
 
 # Create a very basic Transition type, only stores the
 # parameter draws and the log probability of the draw.
-struct Transition{T<:Union{Vector, Real, NamedTuple}, L<:Real} <: AbstractTransition
+struct Transition{T,L<:Real} <: AbstractTransition
     params :: T
     lp :: L
 end
