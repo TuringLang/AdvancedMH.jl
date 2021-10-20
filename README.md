@@ -117,7 +117,7 @@ AdvancedMH.jl implements the interface of [AbstractMCMC](https://github.com/Turi
 
 ```julia
 # Sample 4 chains from the posterior serially, without thread or process parallelism.
-chain = sample(model, RWMH(init_params), MCMCThreads(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
+chain = sample(model, RWMH(init_params), MCMCSerial(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
 
 # Sample 4 chains from the posterior using multiple threads.
 chain = sample(model, RWMH(init_params), MCMCThreads(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
