@@ -22,7 +22,7 @@ export
     MALA
 
 # Reexports
-export sample, MCMCThreads, MCMCDistributed
+export sample, MCMCThreads, MCMCDistributed, MCMCSerial
 
 # Abstract type for MH-style samplers. Needs better name? 
 abstract type MHSampler <: AbstractMCMC.AbstractSampler end
