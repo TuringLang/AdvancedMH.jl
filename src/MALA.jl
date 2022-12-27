@@ -28,7 +28,14 @@ end
 
 check_capabilities(model::DensityModelOrLogDensityModel) = nothing
 function check_capabilities(model::AbstractMCMC.LogDensityModel)
-    @assert LogDensityProblems.capabilities(model.logdensity) !== LogDensityProblems.LogDensityOrder{0}()
+    cap = LogDensityProblems.capabilities(model.logdensity)
+    if cap === nothing
+        throw(ArgumentError("The log density function does not support the LogDensityProblems.jl interface"))
+    end
+
+    if cap === LogDensityProblems.LogDensityOrder{0}()
+        throw(ArgumentError("The gradient of the log density function is not defined: Implement `LogDensityProblems.logdensity_and_gradient` or use automatic differentiation provided by LogDensityProblemsAD.jl"))
+    end
 end
 
 function AbstractMCMC.step(
