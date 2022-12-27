@@ -41,7 +41,7 @@ end
 function propose(
     rng::Random.AbstractRNG,
     proposal::RandomWalkProposal{issymmetric,<:Union{Distribution,AbstractArray}},
-    ::DensityModel
+    ::DensityModelOrLogDensityModel
 ) where {issymmetric}
     return rand(rng, proposal)
 end
@@ -49,7 +49,7 @@ end
 function propose(
     rng::Random.AbstractRNG,
     proposal::RandomWalkProposal{issymmetric,<:Union{Distribution,AbstractArray}},
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     t
 ) where {issymmetric}
     return t + rand(rng, proposal)
@@ -70,7 +70,7 @@ end
 function propose(
     rng::Random.AbstractRNG,
     proposal::StaticProposal{issymmetric,<:Union{Distribution,AbstractArray}},
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     t=nothing
 ) where {issymmetric}
     return rand(rng, proposal)
@@ -103,7 +103,7 @@ end
 function propose(
     rng::Random.AbstractRNG,
     proposal::Proposal{<:Function},
-    model::DensityModel
+    model::DensityModelOrLogDensityModel
 )
     return propose(rng, proposal(), model)
 end
@@ -111,7 +111,7 @@ end
 function propose(
     rng::Random.AbstractRNG,
     proposal::Proposal{<:Function}, 
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     t
 )
     return propose(rng, proposal(t), model)
@@ -132,7 +132,7 @@ end
 function propose(
     rng::Random.AbstractRNG,
     proposals::AbstractArray{<:Proposal},
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
 )
     return map(proposals) do proposal
         return propose(rng, proposal, model)
@@ -141,7 +141,7 @@ end
 function propose(
     rng::Random.AbstractRNG,
     proposals::AbstractArray{<:Proposal},
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     ts,
 )
     return map(proposals, ts) do proposal, t
@@ -152,7 +152,7 @@ end
 @generated function propose(
     rng::Random.AbstractRNG,
     proposals::NamedTuple{names},
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
 ) where {names}
     isempty(names) && return :(NamedTuple())
     expr = Expr(:tuple)
@@ -163,7 +163,7 @@ end
 @generated function propose(
     rng::Random.AbstractRNG,
     proposals::NamedTuple{names},
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     ts,
 ) where {names}
     isempty(names) && return :(NamedTuple())

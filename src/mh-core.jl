@@ -48,23 +48,23 @@ end
 StaticMH(d) = MetropolisHastings(StaticProposal(d))
 RWMH(d) = MetropolisHastings(RandomWalkProposal(d))
 
-function propose(rng::Random.AbstractRNG, sampler::MHSampler, model::DensityModel)
+function propose(rng::Random.AbstractRNG, sampler::MHSampler, model::DensityModelOrLogDensityModel)
     return propose(rng, sampler.proposal, model)
 end
 function propose(
     rng::Random.AbstractRNG,
     sampler::MHSampler,
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     transition_prev::Transition,
 )
     return propose(rng, sampler.proposal, model, transition_prev.params)
 end
 
-function transition(sampler::MHSampler, model::DensityModel, params)
+function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params)
     logdensity = AdvancedMH.logdensity(model, params)
     return transition(sampler, model, params, logdensity)
 end
-function transition(sampler::MHSampler, model::DensityModel, params, logdensity::Real)
+function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, logdensity::Real)
     return Transition(params, logdensity)
 end
 
@@ -73,7 +73,7 @@ end
 # In this case they are identical.
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     sampler::MHSampler;
     init_params=nothing,
     kwargs...
@@ -89,7 +89,7 @@ end
 # or the previous proposal (if not accepted).
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     sampler::MHSampler,
     transition_prev::AbstractTransition;
     kwargs...

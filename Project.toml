@@ -5,11 +5,12 @@ version = "0.6.4"
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+LogDensityProblems = "6fdf6af0-433a-55f7-b3ed-c6c6e0b8df7c"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 
 [compat]
-AbstractMCMC = "2, 3.0"
+AbstractMCMC = "4"
 Distributions = "0.20, 0.21, 0.22, 0.23, 0.24, 0.25"
 Requires = "1"
 julia = "1"
