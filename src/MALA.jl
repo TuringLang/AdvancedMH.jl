@@ -19,20 +19,34 @@ struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{
     gradient::G
 end
 
-logdensity(model::DensityModel, t::GradientTransition) = t.lp
+logdensity(model::DensityModelOrLogDensityModel, t::GradientTransition) = t.lp
 
 propose(rng::Random.AbstractRNG, ::MALA, model) = error("please specify initial parameters")
-function transition(sampler::MALA, model::DensityModel, params)
+function transition(sampler::MALA, model::DensityModelOrLogDensityModel, params)
     return GradientTransition(params, logdensity_and_gradient(model, params)...)
+end
+
+check_capabilities(model::DensityModelOrLogDensityModel) = nothing
+function check_capabilities(model::AbstractMCMC.LogDensityModel)
+    cap = LogDensityProblems.capabilities(model.logdensity)
+    if cap === nothing
+        throw(ArgumentError("The log density function does not support the LogDensityProblems.jl interface"))
+    end
+
+    if cap === LogDensityProblems.LogDensityOrder{0}()
+        throw(ArgumentError("The gradient of the log density function is not defined: Implement `LogDensityProblems.logdensity_and_gradient` or use automatic differentiation provided by LogDensityProblemsAD.jl"))
+    end
 end
 
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     sampler::MALA,
     transition_prev::GradientTransition;
     kwargs...
 )
+    check_capabilities(model)
+    
     # Extract value and gradient of the log density of the current state.
     state = transition_prev.params
     logdensity_state = transition_prev.lp
@@ -75,4 +89,14 @@ function logdensity_and_gradient(model::DensityModel, params)
     gradient!(res, model.logdensity, params)
     return value(res), gradient(res)
 end
+
+"""
+    logdensity_and_gradient(model::AbstractMCMC.LogDensityModel, params)
+
+Return the value and gradient of the log density of the parameters `params` for the `model`.
+"""
+function logdensity_and_gradient(model::AbstractMCMC.LogDensityModel, params)
+     return LogDensityProblems.logdensity_and_gradient(model.logdensity, params)
+ end
+
 

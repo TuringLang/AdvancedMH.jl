@@ -5,6 +5,8 @@ using AbstractMCMC
 using Distributions
 using Requires
 
+using LogDensityProblems: LogDensityProblems
+
 import Random
 
 # Exports
@@ -48,6 +50,8 @@ struct DensityModel{F} <: AbstractMCMC.AbstractModel
     logdensity :: F
 end
 
+const DensityModelOrLogDensityModel = Union{<:DensityModel,<:AbstractMCMC.LogDensityModel}
+
 # Create a very basic Transition type, only stores the
 # parameter draws and the log probability of the draw.
 struct Transition{T,L<:Real} <: AbstractTransition
@@ -56,16 +60,22 @@ struct Transition{T,L<:Real} <: AbstractTransition
 end
 
 # Store the new draw and its log density.
-Transition(model::DensityModel, params) = Transition(params, logdensity(model, params))
+Transition(model::DensityModelOrLogDensityModel, params) = Transition(params, logdensity(model, params))
+function Transition(model::AbstractMCMC.LogDensityModel, params)
+    return Transition(params, LogDensityProblems.logdensity(model.logdensity, params))
+end
 
 # Calculate the density of the model given some parameterization.
-logdensity(model::DensityModel, params) = model.logdensity(params)
-logdensity(model::DensityModel, t::Transition) = t.lp
+logdensity(model::DensityModelOrLogDensityModel, params) = model.logdensity(params)
+logdensity(model::DensityModelOrLogDensityModel, t::Transition) = t.lp
+
+logdensity(model::AbstractMCMC.LogDensityModel, params) = LogDensityProblems.logdensity(model.logdensity, params)
+logdensity(model::AbstractMCMC.LogDensityModel, t::Transition) = t.lp
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
     ts::Vector{<:AbstractTransition},
-    model::DensityModel,
+    model::Union{<:DensityModelOrLogDensityModel,<:AbstractMCMC.LogDensityModel},
     sampler::MHSampler,
     state,
     chain_type::Type{Vector{NamedTuple}};
@@ -91,7 +101,7 @@ end
 
 function AbstractMCMC.bundle_samples(
     ts::Vector{<:Transition{<:NamedTuple}},
-    model::DensityModel,
+    model::Union{<:DensityModelOrLogDensityModel,<:AbstractMCMC.LogDensityModel},
     sampler::MHSampler,
     state,
     chain_type::Type{Vector{NamedTuple}};

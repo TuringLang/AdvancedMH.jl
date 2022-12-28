@@ -5,6 +5,9 @@ using ForwardDiff
 using MCMCChains
 using StructArrays
 
+using LogDensityProblems: LogDensityProblems
+using LogDensityProblemsAD: LogDensityProblemsAD
+
 using LinearAlgebra
 using Random
 using Test
@@ -25,6 +28,10 @@ include("util.jl")
 
     # Construct a DensityModel.
     model = DensityModel(density)
+
+    # `LogDensityModel`
+    LogDensityProblems.logdensity(::typeof(density), θ) = density(θ)
+    LogDensityProblems.dimension(::typeof(density)) = 2
 
     @testset "StaticMH" begin
         # Set up our sampler with initial parameters.
@@ -254,6 +261,21 @@ include("util.jl")
 
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
         @test mean(chain1.σ) ≈ 1.0 atol=0.1
+
+        @testset "LogDensityProblems interface" begin
+            admodel = LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), density)
+            chain2 = sample(
+                AdvancedMH.AbstractMCMC.LogDensityModel(admodel),
+                spl1,
+                100000;
+                init_params=ones(2),
+                chain_type=StructArray,
+                param_names=["μ", "σ"]
+            )
+
+            @test mean(chain2.μ) ≈ 0.0 atol=0.1
+            @test mean(chain2.σ) ≈ 1.0 atol=0.1
+        end
     end
 
     @testset "EMCEE" begin include("emcee.jl") end

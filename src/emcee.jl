@@ -3,7 +3,7 @@ struct Ensemble{D} <: MHSampler
     proposal::D
 end
 
-function transition(sampler::Ensemble, model::DensityModel, params)
+function transition(sampler::Ensemble, model::DensityModelOrLogDensityModel, params)
     return [Transition(model, x) for x in params]
 end
 
@@ -13,7 +13,7 @@ end
 # (if accepted) or the previous proposal (if not accepted).
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     spl::Ensemble,
     params_prev::Vector{<:Transition};
     kwargs...,
@@ -26,7 +26,7 @@ end
 #
 # Initial proposal
 #
-function propose(rng::Random.AbstractRNG, spl::Ensemble, model::DensityModel)
+function propose(rng::Random.AbstractRNG, spl::Ensemble, model::DensityModelOrLogDensityModel)
     # Make the first proposal with a static draw from the prior.
     static_prop = StaticProposal(spl.proposal.proposal)
     mh_spl = MetropolisHastings(static_prop)
@@ -39,7 +39,7 @@ end
 function propose(
     rng::Random.AbstractRNG,
     spl::Ensemble,
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     walkers::Vector{<:Transition},
 )
     new_walkers = similar(walkers)
@@ -68,7 +68,7 @@ StretchProposal(p) = StretchProposal(p, 2.0)
 function move(
     rng::Random.AbstractRNG, 
     spl::Ensemble{<:StretchProposal},
-    model::DensityModel,
+    model::DensityModelOrLogDensityModel,
     walker::Transition,
     other_walker::Transition,
 )
