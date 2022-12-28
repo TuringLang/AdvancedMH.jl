@@ -68,6 +68,24 @@ Quantiles
 
 ```
 
+### Usage with [`LogDensityProblems.jl`](https://github.com/tpapp/LogDensityProblems.jl)
+
+It can also be used with models defining the [`LogDensityProblems.jl`](https://github.com/tpapp/LogDensityProblems.jl) interface by wrapping it in `AbstractMCMC.LogDensityModel` before passing it to `sample`:
+
+``` julia
+using AbstractMCMC: LogDensityModel
+using LogDensityProblems
+
+# Use a struct instead of `typeof(density)` for sake of readability.
+struct LogTargetDensity end
+
+LogDensityProblems.logdensity(p::LogTargetDensity, θ) = density(θ)  # standard multivariate normal
+LogDensityProblems.dimension(p::LogTargetDensity) = 2
+LogDensityProblems.capabilities(::LogTargetDensity) = LogDensityProblems.LogDensityOrder{0}()
+
+sample(LogDensityModel(LogTargetDensity()), spl, 100000; param_names=["μ", "σ"], chain_type=Chains)
+```
+
 ## Proposals
 
 AdvancedMH offers various methods of defining your inference problem. Behind the scenes, a `MetropolisHastings` sampler simply holds
@@ -156,4 +174,14 @@ spl = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
 
 # Sample from the posterior.
 chain = sample(model, spl, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+```
+
+### Usage with [`LogDensityProblemsAD.jl`](https://github.com/tpapp/LogDensityProblemsAD.jl)
+
+Using our implementation of the `LogDensityProblems.jl` interface from earlier, we can use [`LogDensityProblemsAD.jl`](https://github.com/tpapp/LogDensityProblemsAD.jl) to provide us with the gradient computation used in MALA:
+
+```julia
+using LogDensityProblemsAD
+model_with_ad = LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), LogTargetDensity())
+sample(LogDensityModel(model_with_ad), spl, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
 ```
