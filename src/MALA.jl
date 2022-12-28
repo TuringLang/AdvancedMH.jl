@@ -84,9 +84,19 @@ end
 
 Return the value and gradient of the log density of the parameters `params` for the `model`.
 """
-function logdensity_and_gradient(model::DensityModelOrLogDensityModel, params)
+function logdensity_and_gradient(model::DensityModel, params)
     res = GradientResult(params)
     gradient!(res, model.logdensity, params)
     return value(res), gradient(res)
 end
+
+"""
+    logdensity_and_gradient(model::AbstractMCMC.LogDensityModel, params)
+
+Return the value and gradient of the log density of the parameters `params` for the `model`.
+"""
+function logdensity_and_gradient(model::AbstractMCMC.LogDensityModel, params)
+     return LogDensityProblems.logdensity_and_gradient(model.logdensity, params)
+ end
+
 
