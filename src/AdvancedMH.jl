@@ -12,7 +12,7 @@ import Random
 # Exports
 export
     MetropolisHastings,
-    DensityModelOrLogDensityModel,
+    DensityModel,
     RWMH,
     StaticMH,
     StaticProposal,
