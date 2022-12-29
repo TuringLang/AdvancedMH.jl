@@ -14,7 +14,7 @@ AbstractMCMC = "4"
 Distributions = "0.20, 0.21, 0.22, 0.23, 0.24, 0.25"
 LogDensityProblems = "2"
 Requires = "1"
-julia = "1"
+julia = "1.6"
 
 [extras]
 DiffResults = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
