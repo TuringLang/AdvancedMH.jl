@@ -17,11 +17,27 @@
             # perform stretch move and sample from prior in initial step
             Random.seed!(100)
             sampler = Ensemble(1_000, StretchProposal([InverseGamma(2, 3), Normal(0, 1)]))
+
             chain = sample(model, sampler, 1_000;
                            param_names = ["s", "m"], chain_type = Chains)
-
+            @test chain isa Chains
+            @test range(chain) == 1:1_000
             @test mean(chain["s"]) ≈ 49/24 atol=0.1
             @test mean(chain["m"]) ≈ 7/6 atol=0.1
+
+            chain2 = sample(
+                model,
+                sampler,
+                1_000;
+                param_names = ["s", "m"],
+                chain_type = Chains,
+                discard_initial=25,
+                thinning=4,
+            )
+            @test chain2 isa Chains
+            @test range(chain2) == range(26; step=4, length=1_000)
+            @test mean(chain2["s"]) ≈ 49/24 atol=0.1
+            @test mean(chain2["m"]) ≈ 7/6 atol=0.1
         end
 
         @testset "transformed space" begin
@@ -41,12 +57,27 @@
 
             # perform stretch move and sample from normal distribution in initial step
             Random.seed!(100)
-            sampler = Ensemble(1_000, StretchProposal(MvNormal(2, 1)))
+            sampler = Ensemble(1_000, StretchProposal(MvNormal(zeros(2), I)))
             chain = sample(model, sampler, 1_000;
                            param_names = ["logs", "m"], chain_type = Chains)
-
+            @test chain isa Chains
+            @test range(chain) == 1:1_000
             @test mean(exp, chain["logs"]) ≈ 49/24 atol=0.1
             @test mean(chain["m"]) ≈ 7/6 atol=0.1
+
+            chain2 = sample(
+                model,
+                sampler,
+                1_000;
+                param_names = ["logs", "m"],
+                chain_type = Chains,
+                discard_initial=25,
+                thinning=4,
+            )
+            @test chain2 isa Chains
+            @test range(chain2) == range(26; step=4, length=1_000)
+            @test mean(exp, chain2["logs"]) ≈ 49/24 atol=0.1
+            @test mean(chain2["m"]) ≈ 7/6 atol=0.1
         end
     end
 end

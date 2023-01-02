@@ -3,23 +3,8 @@ struct Ensemble{D} <: MHSampler
     proposal::D
 end
 
-# Define the first sampling step.
-# Return a 2-tuple consisting of the initial sample and the initial state.
-# In this case they are identical.
-function AbstractMCMC.step(
-    rng::Random.AbstractRNG,
-    model::DensityModel,
-    spl::Ensemble;
-    init_params = nothing,
-    kwargs...,
-)
-    if init_params === nothing
-        transitions = propose(rng, spl, model)
-    else
-        transitions = [Transition(model, x) for x in init_params]
-    end
-
-    return transitions, transitions
+function transition(sampler::Ensemble, model::DensityModel, params)
+    return [Transition(model, x) for x in params]
 end
 
 # Define the other sampling steps.

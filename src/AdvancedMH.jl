@@ -25,7 +25,7 @@ export
     AMProposal
 
 # Reexports
-export sample, MCMCThreads, MCMCDistributed
+export sample, MCMCThreads, MCMCDistributed, MCMCSerial
 
 # Abstract type for MH-style samplers. Needs better name? 
 abstract type MHSampler <: AbstractMCMC.AbstractSampler end
@@ -36,24 +36,24 @@ abstract type AbstractTransition end
 # Define a model type. Stores the log density function and the data to 
 # evaluate the log density on.
 """
-    DensityModel{F<:Function} <: AbstractModel
+    DensityModel{F} <: AbstractModel
 
 `DensityModel` wraps around a self-contained log-liklihood function `logdensity`.
 
 Example:
 
 ```julia
-l
-DensityModel
+l(x) = logpdf(Normal(), x)
+DensityModel(l)
 ```
 """
-struct DensityModel{F<:Function} <: AbstractMCMC.AbstractModel
+struct DensityModel{F} <: AbstractMCMC.AbstractModel
     logdensity :: F
 end
 
 # Create a very basic Transition type, only stores the
 # parameter draws and the log probability of the draw.
-struct Transition{T<:Union{Vector, Real, NamedTuple}, L<:Real} <: AbstractTransition
+struct Transition{T,L<:Real} <: AbstractTransition
     params :: T
     lp :: L
 end

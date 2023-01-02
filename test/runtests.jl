@@ -1,13 +1,13 @@
 using AdvancedMH
+using DiffResults
 using Distributions
-using StructArrays
+using ForwardDiff
 using MCMCChains
-using LinearAlgebra
+using StructArrays
 
+using LinearAlgebra
 using Random
 using Test
-using DiffResults
-using ForwardDiff
 
 include("util.jl")
 
@@ -29,7 +29,7 @@ include("util.jl")
     @testset "StaticMH" begin
         # Set up our sampler with initial parameters.
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
-        spl2 = StaticMH(MvNormal([0.0, 0.0], 1))
+        spl2 = StaticMH(MvNormal(zeros(2), I))
 
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
@@ -45,7 +45,7 @@ include("util.jl")
     @testset "RandomWalk" begin
         # Set up our sampler with initial parameters.
         spl1 = RWMH([Normal(0,1), Normal(0, 1)])
-        spl2 = RWMH(MvNormal([0.0, 0.0], 1))
+        spl2 = RWMH(MvNormal(zeros(2), I))
 
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
@@ -101,17 +101,67 @@ include("util.jl")
     end
 
     @testset "MCMCChains" begin
-        spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
-        spl2 = MetropolisHastings((μ = StaticProposal(Normal(0,1)), σ = StaticProposal(Normal(0, 1))))
-
-        chain1 = sample(model, spl1, 10_000; param_names=["μ", "σ"], chain_type=Chains)
-        chain2 = sample(model, spl2, 10_000; chain_type=Chains)
-
+        # Array of parameters
+        chain1 = sample(
+            model, StaticMH([Normal(0,1), Normal(0, 1)]), 10_000;
+            param_names=["μ", "σ"], chain_type=Chains
+        )
+        @test chain1 isa Chains
+        @test range(chain1) == 1:10_000
         @test mean(chain1["μ"]) ≈ 0.0 atol=0.1
         @test mean(chain1["σ"]) ≈ 1.0 atol=0.1
 
+        chain1b = sample(
+            model, StaticMH([Normal(0,1), Normal(0, 1)]), 10_000;
+            param_names=["μ", "σ"], chain_type=Chains, discard_initial=25, thinning=4,
+        )
+        @test chain1b isa Chains
+        @test range(chain1b) == range(26; step=4, length=10_000)
+        @test mean(chain1b["μ"]) ≈ 0.0 atol=0.1
+        @test mean(chain1b["σ"]) ≈ 1.0 atol=0.1
+
+        # NamedTuple of parameters
+        chain2 = sample(
+            model,
+            MetropolisHastings(
+                (μ = StaticProposal(Normal(0,1)), σ = StaticProposal(Normal(0, 1)))
+            ), 10_000;
+            chain_type=Chains
+        )
+        @test chain2 isa Chains
+        @test range(chain2) == 1:10_000
         @test mean(chain2["μ"]) ≈ 0.0 atol=0.1
         @test mean(chain2["σ"]) ≈ 1.0 atol=0.1
+
+        chain2b = sample(
+            model,
+            MetropolisHastings(
+                (μ = StaticProposal(Normal(0,1)), σ = StaticProposal(Normal(0, 1)))
+            ), 10_000;
+            chain_type=Chains, discard_initial=25, thinning=4,
+        )
+        @test chain2b isa Chains
+        @test range(chain2b) == range(26; step=4, length=10_000)
+        @test mean(chain2b["μ"]) ≈ 0.0 atol=0.1
+        @test mean(chain2b["σ"]) ≈ 1.0 atol=0.1
+
+        # Scalar parameter
+        chain3 = sample(
+            DensityModel(x -> loglikelihood(Normal(x, 1), data)),
+            StaticMH(Normal(0, 1)), 10_000; param_names=["μ"], chain_type=Chains
+        )
+        @test chain3 isa Chains
+        @test range(chain3) == 1:10_000
+        @test mean(chain3["μ"]) ≈ 0.0 atol=0.1
+
+        chain3b = sample(
+            DensityModel(x -> loglikelihood(Normal(x, 1), data)),
+            StaticMH(Normal(0, 1)), 10_000;
+            param_names=["μ"], chain_type=Chains, discard_initial=25, thinning=4,
+        )
+        @test chain3b isa Chains
+        @test range(chain3b) == range(26; step=4, length=10_000)
+        @test mean(chain3b["μ"]) ≈ 0.0 atol=0.1
     end
 
     @testset "Proposal styles" begin
@@ -220,16 +270,15 @@ include("util.jl")
     end
 
     @testset "MALA" begin
-        
         # Set up the sampler.
-        sigma = 1e-1
-        spl1 = MALA(x -> MvNormal((sigma^2 / 2) .* x, sigma))
+        σ² = 0.01
+        spl1 = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
 
         # Sample from the posterior with initial parameters.
         chain1 = sample(model, spl1, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
 
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
-        @test mean(chain1.σ) ≈ 1.0 atol=0.1 
+        @test mean(chain1.σ) ≈ 1.0 atol=0.1
     end
 
     @testset "EMCEE" begin include("emcee.jl") end

@@ -16,6 +16,8 @@ using AdvancedMH
 using Distributions
 using MCMCChains
 
+using LinearAlgebra
+
 # Generate a set of data from the posterior we want to estimate.
 data = rand(Normal(0, 1), 30)
 
@@ -28,7 +30,7 @@ density(θ) = insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
 model = DensityModel(density)
 
 # Set up our sampler with a joint multivariate Normal proposal.
-spl = RWMH(MvNormal(2,1))
+spl = RWMH(MvNormal(zeros(2), I))
 
 # Sample from the posterior.
 chain = sample(model, spl, 100000; param_names=["μ", "σ"], chain_type=Chains)
@@ -109,14 +111,19 @@ rw_prop = RandomWalkProposal(Normal(0,1))
 Different methods are easily composeable. One parameter can be static and another can be a random walk,
 each of which may be drawn from separate distributions.
 
-## Multithreaded sampling
+## Multiple chains
 
-AdvancedMH.jl implements the interface of [AbstractMCMC](https://github.com/TuringLang/AbstractMCMC.jl/), which means you get multiple chain sampling
-in parallel for free:
+AdvancedMH.jl implements the interface of [AbstractMCMC](https://github.com/TuringLang/AbstractMCMC.jl/) which means sampling of multiple chains is supported for free:
 
 ```julia
-# Sample 4 chains from the posterior.
-chain = psample(model, RWMH(init_params), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
+# Sample 4 chains from the posterior serially, without thread or process parallelism.
+chain = sample(model, RWMH(init_params), MCMCSerial(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
+
+# Sample 4 chains from the posterior using multiple threads.
+chain = sample(model, RWMH(init_params), MCMCThreads(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
+
+# Sample 4 chains from the posterior using multiple processes.
+chain = sample(model, RWMH(init_params), MCMCDistributed(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
 ```
 
 ## Metropolis-adjusted Langevin algorithm (MALA)
@@ -135,6 +142,8 @@ using DiffResults
 using ForwardDiff
 using StructArrays
 
+using LinearAlgebra
+
 # Generate a set of data from the posterior we want to estimate.
 data = rand(Normal(0, 1), 30)
 
@@ -147,8 +156,8 @@ density(θ) = insupport(θ) ? sum(logpdf.(dist(θ), data)) : -Inf
 model = DensityModel(density)
 
 # Set up the sampler with a multivariate Gaussian proposal.
-sigma = 1e-1
-spl = MALA(x -> MvNormal((sigma^2 / 2) .* x, sigma))
+σ² = 0.01
+spl = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
 
 # Sample from the posterior.
 chain = sample(model, spl, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])

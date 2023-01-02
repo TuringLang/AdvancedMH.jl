@@ -48,114 +48,25 @@ end
 StaticMH(d) = MetropolisHastings(StaticProposal(d))
 RWMH(d) = MetropolisHastings(RandomWalkProposal(d))
 
-# default function without RNG
-propose(spl::MetropolisHastings, args...) = propose(Random.GLOBAL_RNG, spl, args...)
-
-# Propose from a vector of proposals
-function propose(
-    rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:AbstractArray},
-    model::DensityModel
-)
-    proposal = map(p -> propose(rng, p, model), spl.proposal)
-    return Transition(model, proposal)
+function propose(rng::Random.AbstractRNG, sampler::MHSampler, model::DensityModel)
+    return propose(rng, sampler.proposal, model)
 end
-
 function propose(
     rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:AbstractArray},
+    sampler::MHSampler,
     model::DensityModel,
-    params_prev::Transition
+    transition_prev::Transition,
 )
-    proposal = map(spl.proposal, params_prev.params) do p, params
-        propose(rng, p, model, params)
-    end
-    return Transition(model, proposal)
+    return propose(rng, sampler.proposal, model, transition_prev.params)
 end
 
-# Make a proposal from one Proposal struct.
-function propose(
-    rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:Proposal},
-    model::DensityModel
-)
-    proposal = propose(rng, spl.proposal, model)
-    return Transition(model, proposal)
+function transition(sampler::MHSampler, model::DensityModel, params)
+    logdensity = AdvancedMH.logdensity(model, params)
+    return transition(sampler, model, params, logdensity)
 end
-
-function propose(
-    rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:Proposal},
-    model::DensityModel,
-    params_prev::Transition
-)
-    proposal = propose(rng, spl.proposal, model, params_prev.params)
-    return Transition(model, proposal)
+function transition(sampler::MHSampler, model::DensityModel, params, logdensity::Real)
+    return Transition(params, logdensity)
 end
-
-# Make a proposal from a NamedTuple of Proposal.
-function propose(
-    rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:NamedTuple},
-    model::DensityModel
-)
-    proposal = _propose(rng, spl.proposal, model)
-    return Transition(model, proposal)
-end
-
-function propose(
-    rng::Random.AbstractRNG,
-    spl::MetropolisHastings{<:NamedTuple},
-    model::DensityModel,
-    params_prev::Transition
-)
-    proposal = _propose(rng, spl.proposal, model, params_prev.params)
-    return Transition(model, proposal)
-end
-
-@generated function _propose(
-    rng::Random.AbstractRNG,
-    proposal::NamedTuple{names},
-    model::DensityModel
-) where {names}
-    isempty(names) && return :(NamedTuple())
-    expr = Expr(:tuple)
-    expr.args = Any[:($name = propose(rng, proposal.$name, model)) for name in names]
-    return expr
-end
-
-@generated function _propose(
-    rng::Random.AbstractRNG,
-    proposal::NamedTuple{names},
-    model::DensityModel,
-    params_prev::NamedTuple
-) where {names}
-    isempty(names) && return :(NamedTuple())
-    expr = Expr(:tuple)
-    expr.args = Any[
-        :($name = propose(rng, proposal.$name, model, params_prev.$name)) for name in names
-    ]
-    return expr
-end
-
-transition(sampler, model, params) = transition(model, params)
-transition(model, params) = Transition(model, params)
-
-# Called to update proposal when the first sample is drawn
-trackstep!(proposal::Proposal, params) = nothing
-trackstep!(proposal::AbstractArray, params) = foreach(trackstep!, proposal, params)
-trackstep!(proposal::NamedTuple, params) = foreach(trackstep!, proposal, params)
-
-# Called to update proposal when a new step is performed
-# The last argument determines if the step is an acceptance step
-trackstep!(proposal::Proposal, params, 
-           ::Union{Val{true}, Val{false}}) = nothing
-
-trackstep!(proposal::AbstractArray, params, accept::Union{Val{true},Val{false}}) = 
-           foreach((prop, par) -> trackstep!(prop, par, accept), proposal, params)
-
-trackstep!(proposal::NamedTuple, params, accept::Union{Val{true},Val{false}}) = 
-           foreach((prop, par) -> trackstep!(prop, par, accept), proposal, params)
 
 # Define the first sampling step.
 # Return a 2-tuple consisting of the initial sample and the initial state.
@@ -163,17 +74,12 @@ trackstep!(proposal::NamedTuple, params, accept::Union{Val{true},Val{false}}) =
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModel,
-    spl::MHSampler;
+    sampler::MHSampler;
     init_params=nothing,
     kwargs...
 )
-    if init_params === nothing
-        transition = propose(rng, spl, model)
-    else
-        transition = AdvancedMH.transition(spl, model, init_params)
-    end
-
-    trackstep!(spl.proposal, transition.params)
+    params = init_params === nothing ? propose(rng, sampler, model) : init_params
+    transition = AdvancedMH.transition(sampler, model, params)
     return transition, transition
 end
 
@@ -184,29 +90,30 @@ end
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModel,
-    spl::MHSampler,
-    params_prev::AbstractTransition;
+    sampler::MHSampler,
+    transition_prev::AbstractTransition;
     kwargs...
 )
     # Generate a new proposal.
-    params = propose(rng, spl, model, params_prev)
+    candidate = propose(rng, sampler, model, transition_prev)
 
-    # Calculate the log acceptance probability.
-    logα = logdensity(model, params) - logdensity(model, params_prev) +
-        logratio_proposal_density(spl, params_prev, params)
+    # Calculate the log acceptance probability and the log density of the candidate.
+    logdensity_candidate = logdensity(model, candidate)
+    logα = logdensity_candidate - logdensity(model, transition_prev) +
+        logratio_proposal_density(sampler, transition_prev, candidate)
 
     # Decide whether to return the previous params or the new one.
-    if -Random.randexp(rng) < logα
-        trackstep!(spl.proposal, params.params, Val(true))
-        return params, params
+    transition = if -Random.randexp(rng) < logα
+        AdvancedMH.transition(sampler, model, candidate, logdensity_candidate)
     else
-        trackstep!(spl.proposal, params_prev.params, Val(false))
-        return params_prev, params_prev
+        transition_prev
     end
+
+    return transition, transition
 end
 
 function logratio_proposal_density(
-    sampler::MetropolisHastings, params_prev::Transition, params::Transition
+    sampler::MetropolisHastings, transition_prev::AbstractTransition, candidate
 )
-    return logratio_proposal_density(sampler.proposal, params_prev.params, params.params)
+    return logratio_proposal_density(sampler.proposal, transition_prev.params, candidate)
 end

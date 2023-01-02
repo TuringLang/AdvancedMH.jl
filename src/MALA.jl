@@ -19,48 +19,60 @@ struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{
     gradient::G
 end
 
-transition(::MALA, model, params) = GradientTransition(model, params)
-
-# Store the new draw, its log density and its gradient
-GradientTransition(model::DensityModel, params) = GradientTransition(params, logdensity_and_gradient(model, params)...)
+logdensity(model::DensityModel, t::GradientTransition) = t.lp
 
 propose(rng::Random.AbstractRNG, ::MALA, model) = error("please specify initial parameters")
+function transition(sampler::MALA, model::DensityModel, params)
+    return GradientTransition(params, logdensity_and_gradient(model, params)...)
+end
 
-function propose(
+function AbstractMCMC.step(
     rng::Random.AbstractRNG,
-    spl::MALA{<:Proposal},
     model::DensityModel,
-    params_prev::GradientTransition
+    sampler::MALA,
+    transition_prev::GradientTransition;
+    kwargs...
 )
-    proposal = propose(rng, spl.proposal(params_prev.gradient), model, params_prev.params)
-    return GradientTransition(model, proposal)
-end
+    # Extract value and gradient of the log density of the current state.
+    state = transition_prev.params
+    logdensity_state = transition_prev.lp
+    gradient_logdensity_state = transition_prev.gradient
 
+    # Generate a new proposal.
+    proposal = sampler.proposal
+    candidate = propose(rng, proposal(gradient_logdensity_state), model, state)
 
-function q(
-    spl::MALA{<:Proposal},
-    t::GradientTransition,
-    t_cond::GradientTransition
-)
-    return q(spl.proposal(-t_cond.gradient), t.params, t_cond.params)
-end
+    # Compute both the value of the log density and its gradient
+    logdensity_candidate, gradient_logdensity_candidate = logdensity_and_gradient(
+        model, candidate
+    )
 
-function logratio_proposal_density(
-    sampler::MALA{<:Proposal}, state::GradientTransition, candidate::GradientTransition
-)
-    return q(sampler, state, candidate) - q(sampler, candidate, state)
+    # Compute the log ratio of proposal densities.
+    logratio_proposal_density = q(
+        proposal(-gradient_logdensity_candidate), state, candidate
+    ) - q(proposal(-gradient_logdensity_state), candidate, state)
+
+    # Compute the log acceptance probability.
+    logα = logdensity_candidate - logdensity_state + logratio_proposal_density
+
+    # Decide whether to return the previous params or the new one.
+    transition = if -Random.randexp(rng) < logα
+        GradientTransition(candidate, logdensity_candidate, gradient_logdensity_candidate)
+    else
+        transition_prev
+    end
+
+    return transition, transition
 end
 
 """
     logdensity_and_gradient(model::DensityModel, params)
 
-Efficiently returns the value and gradient of the model
+Return the value and gradient of the log density of the parameters `params` for the `model`.
 """
 function logdensity_and_gradient(model::DensityModel, params)
     res = GradientResult(params)
     gradient!(res, model.logdensity, params)
-    return (value(res), gradient(res))
+    return value(res), gradient(res)
 end
 
-
-logdensity(model::DensityModel, t::GradientTransition) = t.lp

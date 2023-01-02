@@ -2,11 +2,13 @@ import .MCMCChains: Chains
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
-    ts::Vector{<:Transition{<:AbstractArray}},
+    ts::Vector{<:AbstractTransition},
     model::DensityModel,
     sampler::MHSampler,
     state,
     chain_type::Type{Chains};
+    discard_initial=0,
+    thinning=1,
     param_names=missing,
     kwargs...
 )
@@ -21,11 +23,11 @@ function AbstractMCMC.bundle_samples(
         param_names = Symbol.(param_names)
     end
 
-    # Add the log density field to the parameter names.
-    push!(param_names, :lp)
-
     # Bundle everything up and return a Chains struct.
-    return Chains(vals, param_names, (internals = [:lp],))
+    return Chains(
+        vals, vcat(param_names, [:lp]), (parameters = param_names, internals = [:lp],);
+        start=discard_initial + 1, thin=thinning,
+    )
 end
 
 function AbstractMCMC.bundle_samples(
@@ -34,6 +36,8 @@ function AbstractMCMC.bundle_samples(
     sampler::MHSampler,
     state,
     chain_type::Type{Chains};
+    discard_initial=0,
+    thinning=1,
     param_names=missing,
     kwargs...
 )
@@ -59,15 +63,20 @@ function AbstractMCMC.bundle_samples(
     end
 
     # Bundle everything up and return a Chains struct.
-    return Chains(vals, param_names, (internals = [:lp],))
+    return Chains(
+        vals, param_names, (parameters = param_names, internals = [:lp]);
+        start=discard_initial + 1, thin=thinning,
+    )
 end
 
 function AbstractMCMC.bundle_samples(
-    ts::Vector{<:Vector{<:Transition}},
+    ts::Vector{<:Vector{<:AbstractTransition}},
     model::DensityModel,
     sampler::Ensemble,
     state,
     chain_type::Type{Chains};
+    discard_initial=0,
+    thinning=1,
     param_names=missing,
     kwargs...
 )
@@ -96,9 +105,9 @@ function AbstractMCMC.bundle_samples(
         param_names = Symbol.(param_names)
     end
 
-    # Add the log density field to the parameter names.
-    push!(param_names, :lp)
-
     # Bundle everything up and return a Chains struct.
-    return Chains(vals, param_names, (internals=[:lp],))
+    return Chains(
+        vals, vcat(param_names, [:lp]), (parameters = param_names, internals = [:lp]);
+        start=discard_initial + 1, thin=thinning,
+    )
 end
