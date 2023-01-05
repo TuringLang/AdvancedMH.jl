@@ -44,11 +44,13 @@ function propose(
 )
     new_walkers = similar(walkers)
 
-    others = 1:(spl.n_walkers - 1)
-    for i in 1:spl.n_walkers
+    n_walkers = spl.n_walkers
+    uniform_sampler = Random.Sampler(rng, 1:(n_walkers - 1))
+
+    for i in 1:n_walkers
         walker = walkers[i]
-        idx = mod1(i + rand(rng, others), spl.n_walkers)
-        other_walker = walkers[idx]
+        idx = mod1(i + rand(rng, uniform_sampler), n_walkers)
+        other_walker = idx < i ? new_walkers[idx] : walkers[idx]
         new_walkers[i] = move(rng, spl, model, walker, other_walker)
     end
 
