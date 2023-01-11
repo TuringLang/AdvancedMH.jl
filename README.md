@@ -70,10 +70,9 @@ Quantiles
 
 ### Usage with [`LogDensityProblems.jl`](https://github.com/tpapp/LogDensityProblems.jl)
 
-It can also be used with models defining the [`LogDensityProblems.jl`](https://github.com/tpapp/LogDensityProblems.jl) interface by wrapping it in `AbstractMCMC.LogDensityModel` before passing it to `sample`:
+Alternatively, you can define your model with the [`LogDensityProblems.jl`](https://github.com/tpapp/LogDensityProblems.jl) interface:
 
 ``` julia
-using AbstractMCMC: LogDensityModel
 using LogDensityProblems
 
 # Use a struct instead of `typeof(density)` for sake of readability.
@@ -83,7 +82,7 @@ LogDensityProblems.logdensity(p::LogTargetDensity, θ) = density(θ)  # standard
 LogDensityProblems.dimension(p::LogTargetDensity) = 2
 LogDensityProblems.capabilities(::LogTargetDensity) = LogDensityProblems.LogDensityOrder{0}()
 
-sample(LogDensityModel(LogTargetDensity()), spl, 100000; param_names=["μ", "σ"], chain_type=Chains)
+sample(LogTargetDensity(), spl, 100000; param_names=["μ", "σ"], chain_type=Chains)
 ```
 
 ## Proposals
@@ -156,7 +155,6 @@ takes the gradient computed at the current sample. It is required to specify an 
 using AdvancedMH
 using Distributions
 using MCMCChains
-using DiffResults
 using ForwardDiff
 using StructArrays
 
@@ -181,12 +179,14 @@ spl = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
 chain = sample(model, spl, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
 ```
 
-### Usage with [`LogDensityProblemsAD.jl`](https://github.com/tpapp/LogDensityProblemsAD.jl)
+### Usage with [`LogDensityProblems.jl`](https://github.com/tpapp/LogDensityProblems.jl)
 
-Using our implementation of the `LogDensityProblems.jl` interface from earlier, we can use [`LogDensityProblemsAD.jl`](https://github.com/tpapp/LogDensityProblemsAD.jl) to provide us with the gradient computation used in MALA:
+As above, we can define the model with the LogDensityProblems.jl interface.
+We can implement the gradient of the log density function manually, or use [`LogDensityProblemsAD.jl`](https://github.com/tpapp/LogDensityProblemsAD.jl) to provide us with the gradient computation used in MALA.
+Using our implementation of the `LogDensityProblems.jl` interface above:
 
 ```julia
 using LogDensityProblemsAD
 model_with_ad = LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), LogTargetDensity())
-sample(LogDensityModel(model_with_ad), spl, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+sample(model_with_ad, spl, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
 ```

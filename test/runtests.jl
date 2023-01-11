@@ -265,7 +265,7 @@ include("util.jl")
         @testset "LogDensityProblems interface" begin
             admodel = LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), density)
             chain2 = sample(
-                AdvancedMH.AbstractMCMC.LogDensityModel(admodel),
+                admodel,
                 spl1,
                 100000;
                 init_params=ones(2),
