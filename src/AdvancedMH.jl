@@ -66,16 +66,14 @@ function Transition(model::AbstractMCMC.LogDensityModel, params)
 end
 
 # Calculate the density of the model given some parameterization.
-logdensity(model::DensityModelOrLogDensityModel, params) = model.logdensity(params)
-logdensity(model::DensityModelOrLogDensityModel, t::Transition) = t.lp
-
+logdensity(model::DensityModel, params) = model.logdensity(params)
 logdensity(model::AbstractMCMC.LogDensityModel, params) = LogDensityProblems.logdensity(model.logdensity, params)
-logdensity(model::AbstractMCMC.LogDensityModel, t::Transition) = t.lp
+logdensity(::DensityModelOrLogDensityModel, t::Transition) = t.lp
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
     ts::Vector{<:AbstractTransition},
-    model::Union{<:DensityModelOrLogDensityModel,<:AbstractMCMC.LogDensityModel},
+    model::DensityModelOrLogDensityModel,
     sampler::MHSampler,
     state,
     chain_type::Type{Vector{NamedTuple}};
@@ -101,7 +99,7 @@ end
 
 function AbstractMCMC.bundle_samples(
     ts::Vector{<:Transition{<:NamedTuple}},
-    model::Union{<:DensityModelOrLogDensityModel,<:AbstractMCMC.LogDensityModel},
+    model::DensityModelOrLogDensityModel,
     sampler::MHSampler,
     state,
     chain_type::Type{Vector{NamedTuple}};
