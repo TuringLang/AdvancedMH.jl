@@ -1,16 +1,14 @@
-using .ForwardDiff: gradient!
-using .DiffResults: GradientResult, value, gradient
-
 struct MALA{D} <: MHSampler
     proposal::D
+
+    MALA{D}(proposal::D) where {D} = new{D}(proposal)
 end
-
-
-# Create a RandomWalkProposal if we weren't given one already.
-MALA(d) = MALA(RandomWalkProposal(d))
 
 # If we were given a RandomWalkProposal, just use that instead.
 MALA(d::RandomWalkProposal) = MALA{typeof(d)}(d)
+
+# Create a RandomWalkProposal if we weren't given one already.
+MALA(d) = MALA(RandomWalkProposal(d))
 
 
 struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}} <: AbstractTransition
@@ -85,9 +83,7 @@ end
 Return the value and gradient of the log density of the parameters `params` for the `model`.
 """
 function logdensity_and_gradient(model::DensityModel, params)
-    res = GradientResult(params)
-    gradient!(res, model.logdensity, params)
-    return value(res), gradient(res)
+    error("no implementation exist for `DensityModel`; try importing ForwardDiff.jl")
 end
 
 """
@@ -96,7 +92,8 @@ end
 Return the value and gradient of the log density of the parameters `params` for the `model`.
 """
 function logdensity_and_gradient(model::AbstractMCMC.LogDensityModel, params)
-     return LogDensityProblems.logdensity_and_gradient(model.logdensity, params)
+    check_capabilities(model)
+    return LogDensityProblems.logdensity_and_gradient(model.logdensity, params)
  end
 
 

@@ -66,16 +66,15 @@ function Transition(model::AbstractMCMC.LogDensityModel, params)
 end
 
 # Calculate the density of the model given some parameterization.
-logdensity(model::DensityModelOrLogDensityModel, params) = model.logdensity(params)
-logdensity(model::DensityModelOrLogDensityModel, t::Transition) = t.lp
-
+logdensity(model::DensityModel, params) = model.logdensity(params)
+logdensity(::DensityModel, t::Transition) = t.lp
 logdensity(model::AbstractMCMC.LogDensityModel, params) = LogDensityProblems.logdensity(model.logdensity, params)
-logdensity(model::AbstractMCMC.LogDensityModel, t::Transition) = t.lp
+logdensity(::AbstractMCMC.LogDensityModel, t::Transition) = t.lp
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
     ts::Vector{<:AbstractTransition},
-    model::Union{<:DensityModelOrLogDensityModel,<:AbstractMCMC.LogDensityModel},
+    model::DensityModelOrLogDensityModel,
     sampler::MHSampler,
     state,
     chain_type::Type{Vector{NamedTuple}};
@@ -101,7 +100,7 @@ end
 
 function AbstractMCMC.bundle_samples(
     ts::Vector{<:Transition{<:NamedTuple}},
-    model::Union{<:DensityModelOrLogDensityModel,<:AbstractMCMC.LogDensityModel},
+    model::DensityModelOrLogDensityModel,
     sampler::MHSampler,
     state,
     chain_type::Type{Vector{NamedTuple}};
@@ -122,7 +121,7 @@ function __init__()
     @require MCMCChains="c7f686f2-ff18-58e9-bc7b-31028e88f75d" include("mcmcchains-connect.jl")
     @require StructArrays="09ab397b-f2b6-538f-b94a-2f83cf4a842a" include("structarray-connect.jl")
     @require DiffResults = "163ba53b-c6d8-5494-b064-1a9d43ac40c5" begin
-        @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" include("MALA.jl")
+        @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" include("forwarddiff.jl")
     end
 end
 
@@ -130,5 +129,6 @@ end
 include("proposal.jl")
 include("mh-core.jl")
 include("emcee.jl")
+include("MALA.jl")
 
 end # module AdvancedMH
