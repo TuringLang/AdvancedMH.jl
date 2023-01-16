@@ -67,8 +67,9 @@ end
 
 # Calculate the density of the model given some parameterization.
 logdensity(model::DensityModel, params) = model.logdensity(params)
+logdensity(::DensityModel, t::Transition) = t.lp
 logdensity(model::AbstractMCMC.LogDensityModel, params) = LogDensityProblems.logdensity(model.logdensity, params)
-logdensity(::DensityModelOrLogDensityModel, t::Transition) = t.lp
+logdensity(::AbstractMCMC.LogDensityModel, t::Transition) = t.lp
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
