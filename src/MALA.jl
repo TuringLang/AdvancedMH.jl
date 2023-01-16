@@ -1,6 +1,3 @@
-using .ForwardDiff: gradient!
-using .DiffResults: GradientResult, value, gradient
-
 struct MALA{D} <: MHSampler
     proposal::D
 end
@@ -85,9 +82,7 @@ end
 Return the value and gradient of the log density of the parameters `params` for the `model`.
 """
 function logdensity_and_gradient(model::DensityModel, params)
-    res = GradientResult(params)
-    gradient!(res, model.logdensity, params)
-    return value(res), gradient(res)
+    error("no implementation exist for `DensityModel`; try importing ForwardDiff.jl")
 end
 
 """
