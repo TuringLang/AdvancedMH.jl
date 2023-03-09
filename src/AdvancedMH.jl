@@ -123,7 +123,7 @@ end
 function __init__()
     # Better error message if users forget to load ForwardDiff
     Base.Experimental.register_error_hint(MethodError) do io, exc, arg_types, kwargs
-        if exc.f === logdensity_and_gradient && length(arg_types) == 2 && first(arg_types) === DensityModel && isempty(kwargs)
+        if exc.f === logdensity_and_gradient && length(arg_types) == 2 && first(arg_types) <: DensityModel && isempty(kwargs)
             print(io, "\\nDid you forget to load ForwardDiff?")
         end
     end    
