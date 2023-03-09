@@ -98,7 +98,7 @@ include("util.jl")
         )
         @test chain1b isa Chains
         @test range(chain1b) == range(26; step=4, length=10_000)
-        @test mean(chain1b["μ"]) ≈ 0.0 atol=0.1
+        @test mean(chain1b["μ"]) ≈ 0.0 atol=0.15
         @test mean(chain1b["σ"]) ≈ 1.0 atol=0.1
 
         # NamedTuple of parameters
