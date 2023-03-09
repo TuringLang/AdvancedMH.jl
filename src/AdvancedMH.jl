@@ -120,8 +120,14 @@ if !isdefined(Base, :get_extension)
     using Requires
 end
 
-@static if !isdefined(Base, :get_extension)
-    function __init__()
+function __init__()
+    # Better error message if users forget to load ForwardDiff
+    Base.Experimental.register_error_hint(MethodError) do io, exc, arg_types, kwargs
+        if exc.f === logdensity_and_gradient && length(arg_types) == 2 && first(arg_types) === DensityModel
+            print(io, "\\nDid you forget to load ForwardDiff?")
+        end
+    end    
+    @static if !isdefined(Base, :get_extension)
         @require MCMCChains="c7f686f2-ff18-58e9-bc7b-31028e88f75d" include("../ext/AdvancedMHMCMCChainsExt.jl")
         @require StructArrays="09ab397b-f2b6-538f-b94a-2f83cf4a842a" include("../ext/AdvancedMHStructArraysExt.jl")
         @require DiffResults = "163ba53b-c6d8-5494-b064-1a9d43ac40c5" begin

@@ -78,19 +78,12 @@ function AbstractMCMC.step(
 end
 
 """
-    logdensity_and_gradient(model::DensityModel, params)
+    logdensity_and_gradient(model::AbstractMH.DensityModelOrLogDensityModel, params)
 
 Return the value and gradient of the log density of the parameters `params` for the `model`.
 """
-function logdensity_and_gradient(model::DensityModel, params)
-    error("no implementation exist for `DensityModel`; try importing ForwardDiff.jl")
-end
+logdensity_and_gradient(::AbstractMCMC.DensityModelOrLogDensityModel, ::Any)
 
-"""
-    logdensity_and_gradient(model::AbstractMCMC.LogDensityModel, params)
-
-Return the value and gradient of the log density of the parameters `params` for the `model`.
-"""
 function logdensity_and_gradient(model::AbstractMCMC.LogDensityModel, params)
     check_capabilities(model)
     return LogDensityProblems.logdensity_and_gradient(model.logdensity, params)
