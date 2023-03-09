@@ -78,7 +78,7 @@ function AbstractMCMC.step(
 end
 
 """
-    logdensity_and_gradient(model::AbstractMH.DensityModelOrLogDensityModel, params)
+    logdensity_and_gradient(model::AdvancedMH.DensityModelOrLogDensityModel, params)
 
 Return the value and gradient of the log density of the parameters `params` for the `model`.
 """
