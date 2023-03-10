@@ -1,4 +1,12 @@
-import .MCMCChains: Chains
+module AdvancedMHMCMCChainsExt
+
+if isdefined(Base, :get_extension)
+    using AdvancedMH: AbstractMCMC, AbstractTransition, DensityModelOrLogDensityModel, Ensemble, MHSampler, Transition
+    using MCMCChains: Chains
+else
+    using ..AdvancedMH: AbstractMCMC, AbstractTransition, DensityModelOrLogDensityModel, Ensemble, MHSampler, Transition
+    using ..MCMCChains: Chains
+end
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
@@ -111,3 +119,5 @@ function AbstractMCMC.bundle_samples(
         start=discard_initial + 1, thin=thinning,
     )
 end
+
+end # module

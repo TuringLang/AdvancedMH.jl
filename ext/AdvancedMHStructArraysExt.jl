@@ -1,4 +1,12 @@
-import .StructArrays: StructArray
+module AdvancedMHStructArraysExt
+
+if isdefined(Base, :get_extension)
+    using AdvancedMH: AbstractMCMC, AbstractTransition, DensityModelOrLogDensityModel, MHSampler
+    using StructArrays: StructArray
+else
+    using ..AdvancedMH: AbstractMCMC, AbstractTransition, DensityModelOrLogDensityModel, MHSampler
+    using ..StructArrays: StructArray
+end
 
 # A basic chains constructor that works with the Transition struct we defined.
 function AbstractMCMC.bundle_samples(
@@ -17,3 +25,6 @@ function AbstractMCMC.bundle_samples(
 end
 
 AbstractMCMC.chainscat(c::StructArray, cs::StructArray...) = vcat(c, cs...)
+
+
+end # module
