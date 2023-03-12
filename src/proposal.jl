@@ -21,7 +21,7 @@ function RandomWalkProposal{issymmetric}(proposal) where {issymmetric}
 end
 
 # Random draws
-Base.rand(p::Proposal, args...) = rand(Random.GLOBAL_RNG, p, args...)
+Base.rand(p::Proposal, args...) = rand(Random.default_rng(), p, args...)
 Base.rand(rng::Random.AbstractRNG, p::Proposal{<:Distribution}) = rand(rng, p.proposal)
 function Base.rand(rng::Random.AbstractRNG, p::Proposal{<:AbstractArray})
     return map(x -> rand(rng, x), p.proposal)
