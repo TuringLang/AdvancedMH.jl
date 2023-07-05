@@ -4,13 +4,13 @@
 Represents the state of a [`MHSampler`](@ref).
 
 """
-struct MHState{TTrans<:Transition}
+struct MHState{T}
     "Random number of the state"
     rng::Random.AbstractRNG
     "Index of current iteration."
     i::Int
     "Current [`Transition`](@ref)."
-    transition::TTrans
+    transition::T
 end
 
 """
