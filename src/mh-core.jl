@@ -3,10 +3,6 @@
 
 Represents the state of a [`MHSampler`](@ref).
 
-# Fields
-
-$(FIELDS)
-
 """
 struct MHState{TTrans<:Transition}
     "Random number of the state"
