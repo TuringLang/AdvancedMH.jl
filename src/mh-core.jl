@@ -1,4 +1,23 @@
 """
+    MHState
+
+Represents the state of a [`MHSampler`](@ref).
+
+# Fields
+
+$(FIELDS)
+
+"""
+struct MHState{TTrans<:Transition}
+    "Random number of the state"
+    rng::Random.AbstractRNG
+    "Index of current iteration."
+    i::Int
+    "Current [`Transition`](@ref)."
+    transition::TTrans
+end
+
+"""
     MetropolisHastings{D}
 
 `MetropolisHastings` has one field, `proposal`. 
@@ -80,7 +99,7 @@ function AbstractMCMC.step(
 )
     params = init_params === nothing ? propose(rng, sampler, model) : init_params
     transition = AdvancedMH.transition(sampler, model, params)
-    return transition, transition
+    return transition, MH(rng, 0, transition)
 end
 
 # Define the other sampling steps.
@@ -91,10 +110,11 @@ function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModelOrLogDensityModel,
     sampler::MHSampler,
-    transition_prev::AbstractTransition;
+    state::MHState;
     kwargs...
 )
     # Generate a new proposal.
+    transition_prev = state.transition
     candidate = propose(rng, sampler, model, transition_prev)
 
     # Calculate the log acceptance probability and the log density of the candidate.
@@ -109,7 +129,7 @@ function AbstractMCMC.step(
         transition_prev
     end
 
-    return transition, transition
+    return transition, MH(rng, state.i+1, transition)
 end
 
 function logratio_proposal_density(
