@@ -125,7 +125,7 @@ function AbstractMCMC.step(
         transition_prev
     end
 
-    return transition, MH(rng, state.i+1, transition)
+    return transition, MHState(rng, state.i+1, transition)
 end
 
 function logratio_proposal_density(
