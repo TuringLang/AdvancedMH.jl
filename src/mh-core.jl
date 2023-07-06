@@ -95,7 +95,7 @@ function AbstractMCMC.step(
 )
     params = init_params === nothing ? propose(rng, sampler, model) : init_params
     transition = AdvancedMH.transition(sampler, model, params)
-    return transition, MH(rng, 0, transition)
+    return transition, MHState(rng, 0, transition)
 end
 
 # Define the other sampling steps.
