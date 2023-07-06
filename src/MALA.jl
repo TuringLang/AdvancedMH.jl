@@ -47,13 +47,13 @@ function AbstractMCMC.step(
     
     # Extract value and gradient of the log density of the current state.
     transition_prev = state.transition
-    state = transition_prev.params
+    params = transition_prev.params
     logdensity_state = transition_prev.lp
     gradient_logdensity_state = transition_prev.gradient
 
     # Generate a new proposal.
     proposal = sampler.proposal
-    candidate = propose(rng, proposal(gradient_logdensity_state), model, state)
+    candidate = propose(rng, proposal(gradient_logdensity_state), model, params)
 
     # Compute both the value of the log density and its gradient
     logdensity_candidate, gradient_logdensity_candidate = logdensity_and_gradient(
@@ -62,8 +62,8 @@ function AbstractMCMC.step(
 
     # Compute the log ratio of proposal densities.
     logratio_proposal_density = q(
-        proposal(-gradient_logdensity_candidate), state, candidate
-    ) - q(proposal(-gradient_logdensity_state), candidate, state)
+        proposal(-gradient_logdensity_candidate), params, candidate
+    ) - q(proposal(-gradient_logdensity_state), candidate, params)
 
     # Compute the log acceptance probability.
     logα = logdensity_candidate - logdensity_state + logratio_proposal_density

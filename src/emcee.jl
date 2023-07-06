@@ -15,10 +15,11 @@ function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModelOrLogDensityModel,
     spl::Ensemble,
-    params_prev::Vector{<:Transition};
+    state::MHState;
     kwargs...,
 )
     # Generate a new proposal. Accept/reject happens at proposal level.
+    params_prev = state.transition
     transitions = propose(rng, spl, model, params_prev)
     return transitions, MHState(rng, state.i+1, transitions)
 end
