@@ -36,7 +36,7 @@ include("util.jl")
     @testset "StaticMH" begin
         # Set up our sampler with initial parameters.
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
-        spl2 = StaticMH(MvNormal(zeros(2), I))
+        spl2 = StaticMH(2)
 
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
@@ -52,7 +52,7 @@ include("util.jl")
     @testset "RandomWalk" begin
         # Set up our sampler with initial parameters.
         spl1 = RWMH([Normal(0,1), Normal(0, 1)])
-        spl2 = RWMH(MvNormal(zeros(2), I))
+        spl2 = RWMH(2)
 
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
