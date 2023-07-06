@@ -46,9 +46,9 @@ struct MetropolisHastings{D} <: MHSampler
 end
 
 StaticMH(d) = MetropolisHastings(StaticProposal(d))
-StaticMH(d::Int) = MetropolisHastings(StaticProposal(MvNormal(zeros(d), I)))
+StaticMH(d::Int) = MetropolisHastings(StaticProposal(MvNormal(zeros(d), ones(d))))
 RWMH(d) = MetropolisHastings(RandomWalkProposal(d))
-RWMH(d::Int) = MetropolisHastings(RandomWalkProposal(MvNormal(zeros(d), I)))
+RWMH(d::Int) = MetropolisHastings(RandomWalkProposal(MvNormal(zeros(d), ones(d))))
 
 function propose(rng::Random.AbstractRNG, sampler::MHSampler, model::DensityModelOrLogDensityModel)
     return propose(rng, sampler.proposal, model)
