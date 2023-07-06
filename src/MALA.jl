@@ -40,12 +40,13 @@ function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModelOrLogDensityModel,
     sampler::MALA,
-    transition_prev::GradientTransition;
+    state::MHState;
     kwargs...
 )
     check_capabilities(model)
     
     # Extract value and gradient of the log density of the current state.
+    transition_prev = state.transition
     state = transition_prev.params
     logdensity_state = transition_prev.lp
     gradient_logdensity_state = transition_prev.gradient
@@ -74,7 +75,7 @@ function AbstractMCMC.step(
         transition_prev
     end
 
-    return transition, transition
+    return transition, MHState(rng, state.i+1, transition)
 end
 
 """

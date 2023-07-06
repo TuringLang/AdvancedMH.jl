@@ -20,7 +20,7 @@ function AbstractMCMC.step(
 )
     # Generate a new proposal. Accept/reject happens at proposal level.
     transitions = propose(rng, spl, model, params_prev)
-    return transitions, transitions
+    return transitions, MHState(rng, state.i+1, transitions)
 end
 
 #
