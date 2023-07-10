@@ -46,7 +46,7 @@ struct MetropolisHastings{D} <: MHSampler
 end
 
 StaticMH(d) = MetropolisHastings(StaticProposal(d))
-StaticMH(d::Int) = MetropolisHastings(StaticProposal(MvNormal(zeros(d), ones(d))))
+StaticMH(d::Int) = MetropolisHastings(StaticProposal(MvNormal(FillArrays.Zeros(d), I)))
 RWMH(d) = MetropolisHastings(RandomWalkProposal(d))
 RWMH(d::Int) = MetropolisHastings(RandomWalkProposal(MvNormal(FillArrays.Zeros(d), I)))
 
