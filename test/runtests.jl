@@ -36,33 +36,41 @@ include("util.jl")
     @testset "StaticMH" begin
         # Set up our sampler with initial parameters.
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
-        spl2 = StaticMH(2)
+        spl2 = StaticMH(MvNormal(zeros(2), I))
+        spl3 = StaticMH(2)
 
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
         chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"])
+        chain3 = sample(model, spl3, 100000; chain_type=StructArray, param_names=["μ", "σ"])
 
         # chn_mean ≈ dist_mean atol=atol_v
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
         @test mean(chain1.σ) ≈ 1.0 atol=0.1
         @test mean(chain2.μ) ≈ 0.0 atol=0.1
         @test mean(chain2.σ) ≈ 1.0 atol=0.1
+        @test mean(chain3.μ) ≈ 0.0 atol=0.1
+        @test mean(chain3.σ) ≈ 1.0 atol=0.1
     end
 
     @testset "RandomWalk" begin
         # Set up our sampler with initial parameters.
         spl1 = RWMH([Normal(0,1), Normal(0, 1)])
-        spl2 = RWMH(2)
+        spl2 = RWMH(MvNormal(zeros(2), I))
+        spl3 = RWMH(2)
 
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
         chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"])
+        chain3 = sample(model, spl3, 100000; chain_type=StructArray, param_names=["μ", "σ"])
 
         # chn_mean ≈ dist_mean atol=atol_v
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
         @test mean(chain1.σ) ≈ 1.0 atol=0.1
         @test mean(chain2.μ) ≈ 0.0 atol=0.1
         @test mean(chain2.σ) ≈ 1.0 atol=0.1
+        @test mean(chain3.μ) ≈ 0.0 atol=0.1
+        @test mean(chain3.σ) ≈ 1.0 atol=0.1
     end
 
     @testset "parallel sampling" begin
