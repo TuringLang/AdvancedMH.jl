@@ -4,7 +4,7 @@ module AdvancedMH
 using AbstractMCMC
 using Distributions
 using LinearAlgebra: I
-using FillArrays
+using FillArrays: Zeros
 
 using LogDensityProblems: LogDensityProblems
 

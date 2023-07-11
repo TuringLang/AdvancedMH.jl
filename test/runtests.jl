@@ -62,7 +62,7 @@ include("util.jl")
         # Sample from the posterior.
         chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
         chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"])
-        chain3 = sample(model, spl3, 100000; chain_type=StructArray, param_names=["μ", "σ"])
+        chain3 = sample(model, spl3, 200000; chain_type=StructArray, param_names=["μ", "σ"])
 
         # chn_mean ≈ dist_mean atol=atol_v
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
