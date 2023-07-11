@@ -3,6 +3,8 @@ module AdvancedMH
 # Import the relevant libraries.
 using AbstractMCMC
 using Distributions
+using LinearAlgebra: I
+using FillArrays: Zeros
 
 using LogDensityProblems: LogDensityProblems
 
