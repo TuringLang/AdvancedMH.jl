@@ -3,7 +3,7 @@ module AdvancedMH
 # Import the relevant libraries.
 using AbstractMCMC
 using Distributions
-using LinearAlgebra
+using LinearAlgebra: I
 
 using LogDensityProblems: LogDensityProblems
 
