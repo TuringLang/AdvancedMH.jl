@@ -2,12 +2,10 @@
 
 Documentation for AdvancedMH.jl
 
-```@contents
-```
 
 ## Structs
 ```@docs
-StaticMH
+MetropolisHastings
 ```
 
 ## Functions
@@ -19,4 +17,3 @@ sample
 ## Index
 
 ```@index
-```

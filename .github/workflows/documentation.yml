@@ -11,10 +11,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@latest
+      - uses: actions/checkout@v3
+      - uses: julia-actions/setup-julia@v1
         with:
-          version: '1.7'
+          version: 1
       - name: Install dependencies
         run: julia --project=docs/ -e '
               using Pkg; 
@@ -22,6 +22,5 @@ jobs:
               Pkg.instantiate()'
       - name: Build and deploy
         env:
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # If authenticating with SSH deploy key
         run: julia --project=docs/ docs/make.jl
 
