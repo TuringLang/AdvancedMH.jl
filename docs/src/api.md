@@ -9,11 +9,7 @@ MetropolisHastings
 ```
 
 ## Functions
-
 ```@docs
-sample
+StaticMH
+RWMH
 ```
-
-## Index
-
-```@index
