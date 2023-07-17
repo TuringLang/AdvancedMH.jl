@@ -1,5 +1,9 @@
 # AdvancedMH.jl
 
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://turinglang.github.io/AdvancedMH.jl/stable)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://turinglang.github.io/AdvancedMH.jl/dev)
+[![AdvancedMH-CI](https://github.com/TuringLang/AdvancedMH.jl/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/TuringLang/AdvancedMH.jl/actions/workflows/main.yml?query=branch%3Amaster)
+
 AdvancedMH.jl currently provides a robust implementation of random walk Metropolis-Hastings samplers.
 
 Further development aims to provide a suite of adaptive Metropolis-Hastings implementations.
