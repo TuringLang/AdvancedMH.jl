@@ -1,7 +1,7 @@
 """
     MetropolisHastings{D}
 
-`MetropolisHastings` has one field, `proposal`. 
+`MetropolisHastings` has one field, `proposal`.
 `proposal` is a `Proposal`, `NamedTuple` of `Proposal`, or `Array{Proposal}` in the shape of your data.
 For example, if you wanted the sampler to return a `NamedTuple` with shape
 
@@ -38,7 +38,7 @@ none is given, the initial parameters will be drawn from the sampler's proposals
 - `param_names` is a vector of strings to be assigned to parameters. This is only
 used if `chain_type=Chains`.
 - `chain_type` is the type of chain you would like returned to you. Supported
-types are `chain_type=Chains` if `MCMCChains` is imported, or 
+types are `chain_type=Chains` if `MCMCChains` is imported, or
 `chain_type=StructArray` if `StructArrays` is imported.
 """
 struct MetropolisHastings{D} <: MHSampler
@@ -62,12 +62,12 @@ function propose(
     return propose(rng, sampler.proposal, model, transition_prev.params)
 end
 
-function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params)
+function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, accepted, accepted_draws, total_draws)
     logdensity = AdvancedMH.logdensity(model, params)
-    return transition(sampler, model, params, logdensity)
+    return transition(sampler, model, params, logdensity, accepted, accepted_draws, total_draws)
 end
-function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, logdensity::Real)
-    return Transition(params, logdensity)
+function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, logdensity::Real, accepted, accepted_draws, total_draws)
+    return Transition(params, logdensity, accepted, accepted_draws, total_draws)
 end
 
 # Define the first sampling step.
@@ -81,7 +81,7 @@ function AbstractMCMC.step(
     kwargs...
 )
     params = init_params === nothing ? propose(rng, sampler, model) : init_params
-    transition = AdvancedMH.transition(sampler, model, params)
+    transition = AdvancedMH.transition(sampler, model, params, false, 0, 0)
     return transition, transition
 end
 
@@ -105,10 +105,15 @@ function AbstractMCMC.step(
         logratio_proposal_density(sampler, transition_prev, candidate)
 
     # Decide whether to return the previous params or the new one.
+    total_draws = transition_prev.total_draws + 1
     transition = if -Random.randexp(rng) < logα
-        AdvancedMH.transition(sampler, model, candidate, logdensity_candidate)
+        accepted_draws = transition_prev.accepted_draws + 1
+        AdvancedMH.transition(sampler, model, candidate, logdensity_candidate, true, accepted_draws, total_draws)
     else
-        transition_prev
+        params = transition_prev.params
+        lp = transition_prev.lp
+        accepted_draws = transition_prev.accepted_draws
+        Transition(params, lp, false, accepted_draws, total_draws)
     end
 
     return transition, transition

@@ -11,17 +11,20 @@ MALA(d::RandomWalkProposal) = MALA{typeof(d)}(d)
 MALA(d) = MALA(RandomWalkProposal(d))
 
 
-struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}} <: AbstractTransition
+struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple},M<:Bool,D<:Int} <: AbstractTransition
     params::T
     lp::L
     gradient::G
+    accepted :: M
+    accepted_draws :: D
+    total_draws :: D
 end
 
 logdensity(model::DensityModelOrLogDensityModel, t::GradientTransition) = t.lp
 
 propose(rng::Random.AbstractRNG, ::MALA, model) = error("please specify initial parameters")
-function transition(sampler::MALA, model::DensityModelOrLogDensityModel, params)
-    return GradientTransition(params, logdensity_and_gradient(model, params)...)
+function transition(sampler::MALA, model::DensityModelOrLogDensityModel, params, accepted, accepted_draws, total_draws)
+    return GradientTransition(params, logdensity_and_gradient(model, params)..., accepted, accepted_draws, total_draws)
 end
 
 check_capabilities(model::DensityModelOrLogDensityModel) = nothing
@@ -44,7 +47,7 @@ function AbstractMCMC.step(
     kwargs...
 )
     check_capabilities(model)
-    
+
     # Extract value and gradient of the log density of the current state.
     state = transition_prev.params
     logdensity_state = transition_prev.lp
@@ -68,10 +71,16 @@ function AbstractMCMC.step(
     logα = logdensity_candidate - logdensity_state + logratio_proposal_density
 
     # Decide whether to return the previous params or the new one.
+    total_draws = transition_prev.total_draws + 1
     transition = if -Random.randexp(rng) < logα
-        GradientTransition(candidate, logdensity_candidate, gradient_logdensity_candidate)
+        accepted_draws = transition_prev.accepted_draws + 1
+        GradientTransition(candidate, logdensity_candidate, gradient_logdensity_candidate, true, accepted_draws, total_draws)
     else
-        transition_prev
+        accepted_draws = transition_prev.accepted_draws
+        candidate = transition_prev.params
+        lp = transition_prev.lp
+        gradient = transition_prev.gradient
+        GradientTransition(candidate, lp, gradient, false, accepted_draws, total_draws)
     end
 
     return transition, transition
