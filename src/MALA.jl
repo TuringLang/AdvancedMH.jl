@@ -1,30 +1,30 @@
 struct MALA{D} <: MHSampler
     proposal::D
-
-    MALA{D}(proposal::D) where {D} = new{D}(proposal)
+    accepted_draws :: Int
+    total_draws :: Int
 end
 
+MALA(p,ad,td) = MALA(p,ad,td)
+
 # If we were given a RandomWalkProposal, just use that instead.
-MALA(d::RandomWalkProposal) = MALA{typeof(d)}(d)
+MALA(d::RandomWalkProposal) = MALA{typeof(d)}(d,0,0)
 
 # Create a RandomWalkProposal if we weren't given one already.
 MALA(d) = MALA(RandomWalkProposal(d))
 
 
-struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple},M<:Bool,D<:Int} <: AbstractTransition
+struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}} <: AbstractTransition
     params::T
     lp::L
     gradient::G
-    accepted :: M
-    accepted_draws :: D
-    total_draws :: D
+    accepted :: Bool
 end
 
 logdensity(model::DensityModelOrLogDensityModel, t::GradientTransition) = t.lp
 
 propose(rng::Random.AbstractRNG, ::MALA, model) = error("please specify initial parameters")
-function transition(sampler::MALA, model::DensityModelOrLogDensityModel, params, accepted, accepted_draws, total_draws)
-    return GradientTransition(params, logdensity_and_gradient(model, params)..., accepted, accepted_draws, total_draws)
+function transition(sampler::MALA, model::DensityModelOrLogDensityModel, params, accepted)
+    return GradientTransition(params, logdensity_and_gradient(model, params)..., accepted)
 end
 
 check_capabilities(model::DensityModelOrLogDensityModel) = nothing
@@ -71,17 +71,17 @@ function AbstractMCMC.step(
     logα = logdensity_candidate - logdensity_state + logratio_proposal_density
 
     # Decide whether to return the previous params or the new one.
-    total_draws = transition_prev.total_draws + 1
     transition = if -Random.randexp(rng) < logα
-        accepted_draws = transition_prev.accepted_draws + 1
-        GradientTransition(candidate, logdensity_candidate, gradient_logdensity_candidate, true, accepted_draws, total_draws)
+        accepted_draws = sampler.accepted_draws + 1
+        GradientTransition(candidate, logdensity_candidate, gradient_logdensity_candidate, true)
     else
-        accepted_draws = transition_prev.accepted_draws
+        accepted_draws = sampler.accepted_draws
         candidate = transition_prev.params
         lp = transition_prev.lp
         gradient = transition_prev.gradient
-        GradientTransition(candidate, lp, gradient, false, accepted_draws, total_draws)
+        GradientTransition(candidate, lp, gradient, false)
     end
+    sampler = MALA(sampler.proposal, accepted_draws, sampler.total_draws+1)
 
     return transition, transition
 end
