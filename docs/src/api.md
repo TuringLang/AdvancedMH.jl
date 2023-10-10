@@ -6,6 +6,7 @@ Documentation for AdvancedMH.jl
 ## Structs
 ```@docs
 MetropolisHastings
+Transition
 ```
 
 ## Functions

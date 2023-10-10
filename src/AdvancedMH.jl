@@ -56,16 +56,18 @@ const DensityModelOrLogDensityModel = Union{<:DensityModel,<:AbstractMCMC.LogDen
 # Create a very basic Transition type, stores the
 # parameter draws, the log probability of the draw,
 # and the draw information until this point
-struct Transition{T,L<:Real} <: AbstractTransition
+struct Transition{T,L<:Real,M<:Bool,D<:Int} <: AbstractTransition
     params :: T
     lp :: L
-    accepted :: Bool
+    accepted :: M
+    accepted_draws :: D
+    total_draws :: D
 end
 
 # Store the new draw, its log density, and draw information
-Transition(model::DensityModelOrLogDensityModel, params, accepted) = Transition(params, logdensity(model, params), accepted)
-function Transition(model::AbstractMCMC.LogDensityModel, params, accepted)
-    return Transition(params, LogDensityProblems.logdensity(model.logdensity, params), accepted)
+Transition(model::DensityModelOrLogDensityModel, params, accepted, accepted_draws, total_draws) = Transition(params, logdensity(model, params), accepted, accepted_draws, total_draws)
+function Transition(model::AbstractMCMC.LogDensityModel, params, accepted, accepted_draws, total_draws)
+    return Transition(params, LogDensityProblems.logdensity(model.logdensity, params), accepted, accepted_draws, total_draws)
 end
 
 # Calculate the density of the model given some parameterization.

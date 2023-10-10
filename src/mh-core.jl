@@ -43,11 +43,7 @@ types are `chain_type=Chains` if `MCMCChains` is imported, or
 """
 struct MetropolisHastings{D} <: MHSampler
     proposal::D
-    accepted_draws :: Int
-    total_draws :: Int
 end
-
-MetropolisHastings(p) = MetropolisHastings{typeof(p)}(p,0,0)
 
 StaticMH(d) = MetropolisHastings(StaticProposal(d))
 StaticMH(d::Int) = MetropolisHastings(StaticProposal(MvNormal(Zeros(d), I)))
@@ -66,12 +62,12 @@ function propose(
     return propose(rng, sampler.proposal, model, transition_prev.params)
 end
 
-function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, accepted)
+function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, accepted, accepted_draws, total_draws)
     logdensity = AdvancedMH.logdensity(model, params)
-    return transition(sampler, model, params, logdensity, accepted)
+    return transition(sampler, model, params, logdensity, accepted, accepted_draws, total_draws)
 end
-function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, logdensity::Real, accepted)
-    return Transition(params, logdensity, accepted)
+function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, logdensity::Real, accepted, accepted_draws, total_draws)
+    return Transition(params, logdensity, accepted, accepted_draws, total_draws)
 end
 
 # Define the first sampling step.
@@ -85,7 +81,7 @@ function AbstractMCMC.step(
     kwargs...
 )
     params = init_params === nothing ? propose(rng, sampler, model) : init_params
-    transition = AdvancedMH.transition(sampler, model, params, false)
+    transition = AdvancedMH.transition(sampler, model, params, false, 0, 0)
     return transition, transition
 end
 
@@ -109,17 +105,16 @@ function AbstractMCMC.step(
         logratio_proposal_density(sampler, transition_prev, candidate)
 
     # Decide whether to return the previous params or the new one.
+    total_draws = transition_prev.total_draws + 1
     transition = if -Random.randexp(rng) < logα
-        accepted_draws = sampler.accepted_draws + 1
-        AdvancedMH.transition(sampler, model, candidate, logdensity_candidate, true)
+        accepted_draws = transition_prev.accepted_draws + 1
+        AdvancedMH.transition(sampler, model, candidate, logdensity_candidate, true, accepted_draws, total_draws)
     else
-        accepted_draws = sampler.accepted_draws
         params = transition_prev.params
         lp = transition_prev.lp
-        Transition(params, lp, false)
+        accepted_draws = transition_prev.accepted_draws
+        Transition(params, lp, false, accepted_draws, total_draws)
     end
-
-    sampler = typeof(sampler)(sampler.proposal, accepted_draws, sampler.total_draws+1)
 
     return transition, transition
 end
