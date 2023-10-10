@@ -62,12 +62,12 @@ function propose(
     return propose(rng, sampler.proposal, model, transition_prev.params)
 end
 
-function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, accepted, accepted_draws, total_draws)
+function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, accepted)
     logdensity = AdvancedMH.logdensity(model, params)
-    return transition(sampler, model, params, logdensity, accepted, accepted_draws, total_draws)
+    return transition(sampler, model, params, logdensity, accepted)
 end
-function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, logdensity::Real, accepted, accepted_draws, total_draws)
-    return Transition(params, logdensity, accepted, accepted_draws, total_draws)
+function transition(sampler::MHSampler, model::DensityModelOrLogDensityModel, params, logdensity::Real, accepted)
+    return Transition(params, logdensity, accepted)
 end
 
 # Define the first sampling step.
@@ -81,7 +81,7 @@ function AbstractMCMC.step(
     kwargs...
 )
     params = init_params === nothing ? propose(rng, sampler, model) : init_params
-    transition = AdvancedMH.transition(sampler, model, params, false, 0, 0)
+    transition = AdvancedMH.transition(sampler, model, params, false)
     return transition, transition
 end
 
@@ -105,15 +105,12 @@ function AbstractMCMC.step(
         logratio_proposal_density(sampler, transition_prev, candidate)
 
     # Decide whether to return the previous params or the new one.
-    total_draws = transition_prev.total_draws + 1
     transition = if -Random.randexp(rng) < logα
-        accepted_draws = transition_prev.accepted_draws + 1
-        AdvancedMH.transition(sampler, model, candidate, logdensity_candidate, true, accepted_draws, total_draws)
+        AdvancedMH.transition(sampler, model, candidate, logdensity_candidate, true)
     else
         params = transition_prev.params
         lp = transition_prev.lp
-        accepted_draws = transition_prev.accepted_draws
-        Transition(params, lp, false, accepted_draws, total_draws)
+        Transition(params, lp, false)
     end
 
     return transition, transition

@@ -3,8 +3,8 @@ struct Ensemble{D} <: MHSampler
     proposal::D
 end
 
-function transition(sampler::Ensemble, model::DensityModelOrLogDensityModel, params, accepted, accepted_draws, total_draws)
-    return [Transition(model, x, accepted, accepted_draws, total_draws) for x in params]
+function transition(sampler::Ensemble, model::DensityModelOrLogDensityModel, params, accepted)
+    return [Transition(model, x, accepted) for x in params]
 end
 
 # Define the other sampling steps.
@@ -85,21 +85,18 @@ function move(
     y = @. other_walker.params + z * (walker.params - other_walker.params)
 
     # Construct a temporary new walker
-    temp_walker = Transition(model, y, true, walker.accepted_draws, walker.total_draws)
+    temp_walker = Transition(model, y, true)
 
     # Calculate accept/reject value.
     alpha = alphamult + temp_walker.lp - walker.lp
 
-    total_draws = walker.total_draws + 1
     if -Random.randexp(rng) <= alpha
-        accepted_draws = walker.accepted_draws + 1
-        new_walker = Transition(model, y, true, accepted_draws, total_draws)
+        new_walker = Transition(model, y, true)
         return new_walker
     else
-        accepted_draws = walker.accepted_draws
         params = walker.params
         lp = walker.lp
-        old_walker = Transition(params, lp, false, accepted_draws, total_draws)
+        old_walker = Transition(params, lp, false)
         return old_walker
     end
 end
