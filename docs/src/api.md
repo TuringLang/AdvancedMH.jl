@@ -11,6 +11,4 @@ MetropolisHastings
 ## Functions
 ```@docs
 DensityModel
-logdensity_and_gradient
-logratio_proposal_density
 ```
