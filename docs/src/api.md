@@ -10,6 +10,7 @@ MetropolisHastings
 
 ## Functions
 ```@docs
-StaticMH
-RWMH
+DensityModel
+logdensity_and_gradient
+logratio_proposal_density
 ```
