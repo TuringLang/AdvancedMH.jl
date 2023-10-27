@@ -33,7 +33,7 @@ spl = MetropolisHastings(proposal)
 When using `MetropolisHastings` with the function `sample`, the following keyword
 arguments are allowed:
 
-- `init_params` defines the initial parameterization for your model. If
+- `initial_params` defines the initial parameterization for your model. If
 none is given, the initial parameters will be drawn from the sampler's proposals.
 - `param_names` is a vector of strings to be assigned to parameters. This is only
 used if `chain_type=Chains`.
@@ -77,10 +77,10 @@ function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::DensityModelOrLogDensityModel,
     sampler::MHSampler;
-    init_params=nothing,
+    initial_params=nothing,
     kwargs...
 )
-    params = init_params === nothing ? propose(rng, sampler, model) : init_params
+    params = initialparams === nothing ? propose(rng, sampler, model) : initial_params
     transition = AdvancedMH.transition(sampler, model, params)
     return transition, transition
 end
