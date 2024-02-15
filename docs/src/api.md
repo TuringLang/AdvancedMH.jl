@@ -10,6 +10,5 @@ MetropolisHastings
 
 ## Functions
 ```@docs
-StaticMH
-RWMH
+DensityModel
 ```

@@ -182,7 +182,7 @@ include("util.jl")
         val = [0.4, 1.2]
 
         # Sample from the posterior.
-        chain1 = sample(model, spl1, 10, init_params = val)
+        chain1 = sample(model, spl1, 10, initial_params = val)
 
         @test chain1[1].params == val
     end
@@ -265,7 +265,7 @@ include("util.jl")
         spl1 = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
 
         # Sample from the posterior with initial parameters.
-        chain1 = sample(model, spl1, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+        chain1 = sample(model, spl1, 100000; initial_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
 
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
         @test mean(chain1.σ) ≈ 1.0 atol=0.1
@@ -276,7 +276,7 @@ include("util.jl")
                 admodel,
                 spl1,
                 100000;
-                init_params=ones(2),
+                initial_params=ones(2),
                 chain_type=StructArray,
                 param_names=["μ", "σ"]
             )

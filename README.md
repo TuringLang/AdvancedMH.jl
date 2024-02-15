@@ -138,13 +138,13 @@ AdvancedMH.jl implements the interface of [AbstractMCMC](https://github.com/Turi
 
 ```julia
 # Sample 4 chains from the posterior serially, without thread or process parallelism.
-chain = sample(model, RWMH(init_params), MCMCSerial(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
+chain = sample(model, spl, MCMCSerial(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
 
 # Sample 4 chains from the posterior using multiple threads.
-chain = sample(model, RWMH(init_params), MCMCThreads(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
+chain = sample(model, spl, MCMCThreads(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
 
 # Sample 4 chains from the posterior using multiple processes.
-chain = sample(model, RWMH(init_params), MCMCDistributed(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
+chain = sample(model, spl, MCMCDistributed(), 100000, 4; param_names=["μ","σ"], chain_type=Chains)
 ```
 
 ## Metropolis-adjusted Langevin algorithm (MALA)
@@ -152,7 +152,7 @@ chain = sample(model, RWMH(init_params), MCMCDistributed(), 100000, 4; param_nam
 AdvancedMH.jl also offers an implementation of [MALA](https://en.wikipedia.org/wiki/Metropolis-adjusted_Langevin_algorithm) if the `ForwardDiff` and `DiffResults` packages are available. 
 
 A `MALA` sampler can be constructed by `MALA(proposal)` where `proposal` is a function that
-takes the gradient computed at the current sample. It is required to specify an initial sample `init_params` when calling `sample`.
+takes the gradient computed at the current sample. It is required to specify an initial sample `initial_params` when calling `sample`.
 
 ```julia
 # Import the package.
@@ -180,7 +180,7 @@ model = DensityModel(density)
 spl = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
 
 # Sample from the posterior.
-chain = sample(model, spl, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+chain = sample(model, spl, 100000; initial_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
 ```
 
 ### Usage with [`LogDensityProblems.jl`](https://github.com/tpapp/LogDensityProblems.jl)
@@ -192,5 +192,5 @@ Using our implementation of the `LogDensityProblems.jl` interface above:
 ```julia
 using LogDensityProblemsAD
 model_with_ad = LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), LogTargetDensity())
-sample(model_with_ad, spl, 100000; init_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+sample(model_with_ad, spl, 100000; initial_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
 ```
