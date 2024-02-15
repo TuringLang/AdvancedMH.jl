@@ -80,7 +80,7 @@ function AbstractMCMC.step(
     initial_params=nothing,
     kwargs...
 )
-    params = init_params === nothing ? propose(rng, sampler, model) : init_params
+    params = initial_params === nothing ? propose(rng, sampler, model) : initial_params
     transition = AdvancedMH.transition(sampler, model, params, false)
     return transition, transition
 end
