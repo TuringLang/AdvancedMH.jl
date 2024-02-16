@@ -27,13 +27,13 @@ export
 # Reexports
 export sample, MCMCThreads, MCMCDistributed, MCMCSerial
 
-# Abstract type for MH-style samplers. Needs better name? 
+# Abstract type for MH-style samplers. Needs better name?
 abstract type MHSampler <: AbstractMCMC.AbstractSampler end
 
 # Abstract type for MH-style transitions.
 abstract type AbstractTransition end
 
-# Define a model type. Stores the log density function and the data to 
+# Define a model type. Stores the log density function and the data to
 # evaluate the log density on.
 """
     DensityModel{F} <: AbstractModel
@@ -53,17 +53,19 @@ end
 
 const DensityModelOrLogDensityModel = Union{<:DensityModel,<:AbstractMCMC.LogDensityModel}
 
-# Create a very basic Transition type, only stores the
-# parameter draws and the log probability of the draw.
+# Create a very basic Transition type, stores the
+# parameter draws, the log probability of the draw,
+# and the draw information until this point
 struct Transition{T,L<:Real} <: AbstractTransition
     params :: T
     lp :: L
+    accepted :: Bool
 end
 
-# Store the new draw and its log density.
-Transition(model::DensityModelOrLogDensityModel, params) = Transition(params, logdensity(model, params))
-function Transition(model::AbstractMCMC.LogDensityModel, params)
-    return Transition(params, LogDensityProblems.logdensity(model.logdensity, params))
+# Store the new draw, its log density, and draw information
+Transition(model::DensityModelOrLogDensityModel, params, accepted) = Transition(params, logdensity(model, params), accepted)
+function Transition(model::AbstractMCMC.LogDensityModel, params, accepted)
+    return Transition(params, LogDensityProblems.logdensity(model.logdensity, params), accepted)
 end
 
 # Calculate the density of the model given some parameterization.
@@ -128,7 +130,7 @@ function __init__()
         if exc.f === logdensity_and_gradient && length(arg_types) == 2 && first(arg_types) <: DensityModel && isempty(kwargs)
             print(io, "\\nDid you forget to load ForwardDiff?")
         end
-    end    
+    end
     @static if !isdefined(Base, :get_extension)
         @require MCMCChains="c7f686f2-ff18-58e9-bc7b-31028e88f75d" include("../ext/AdvancedMHMCMCChainsExt.jl")
         @require StructArrays="09ab397b-f2b6-538f-b94a-2f83cf4a842a" include("../ext/AdvancedMHStructArraysExt.jl")

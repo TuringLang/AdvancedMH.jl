@@ -15,13 +15,14 @@ struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{
     params::T
     lp::L
     gradient::G
+    accepted::Bool
 end
 
 logdensity(model::DensityModelOrLogDensityModel, t::GradientTransition) = t.lp
 
 propose(rng::Random.AbstractRNG, ::MALA, model) = error("please specify initial parameters")
-function transition(sampler::MALA, model::DensityModelOrLogDensityModel, params)
-    return GradientTransition(params, logdensity_and_gradient(model, params)...)
+function transition(sampler::MALA, model::DensityModelOrLogDensityModel, params, accepted)
+    return GradientTransition(params, logdensity_and_gradient(model, params)..., accepted)
 end
 
 check_capabilities(model::DensityModelOrLogDensityModel) = nothing
@@ -44,7 +45,7 @@ function AbstractMCMC.step(
     kwargs...
 )
     check_capabilities(model)
-    
+
     # Extract value and gradient of the log density of the current state.
     state = transition_prev.params
     logdensity_state = transition_prev.lp
@@ -69,9 +70,12 @@ function AbstractMCMC.step(
 
     # Decide whether to return the previous params or the new one.
     transition = if -Random.randexp(rng) < logα
-        GradientTransition(candidate, logdensity_candidate, gradient_logdensity_candidate)
+        GradientTransition(candidate, logdensity_candidate, gradient_logdensity_candidate, true)
     else
-        transition_prev
+        candidate = transition_prev.params
+        lp = transition_prev.lp
+        gradient = transition_prev.gradient
+        GradientTransition(candidate, lp, gradient, false)
     end
 
     return transition, transition

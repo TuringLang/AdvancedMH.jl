@@ -3,8 +3,8 @@ struct Ensemble{D} <: MHSampler
     proposal::D
 end
 
-function transition(sampler::Ensemble, model::DensityModelOrLogDensityModel, params)
-    return [Transition(model, x) for x in params]
+function transition(sampler::Ensemble, model::DensityModelOrLogDensityModel, params, accepted)
+    return [Transition(model, x, accepted) for x in params]
 end
 
 # Define the other sampling steps.
@@ -68,7 +68,7 @@ end
 StretchProposal(p) = StretchProposal(p, 2.0)
 
 function move(
-    rng::Random.AbstractRNG, 
+    rng::Random.AbstractRNG,
     spl::Ensemble{<:StretchProposal},
     model::DensityModelOrLogDensityModel,
     walker::Transition,
@@ -84,16 +84,20 @@ function move(
     # Make new parameters
     y = @. other_walker.params + z * (walker.params - other_walker.params)
 
-    # Construct a new walker
-    new_walker = Transition(model, y)
+    # Construct a temporary new walker
+    temp_walker = Transition(model, y, true)
 
     # Calculate accept/reject value.
-    alpha = alphamult + new_walker.lp - walker.lp
+    alpha = alphamult + temp_walker.lp - walker.lp
 
     if -Random.randexp(rng) <= alpha
+        new_walker = Transition(model, y, true)
         return new_walker
     else
-        return walker
+        params = walker.params
+        lp = walker.lp
+        old_walker = Transition(params, lp, false)
+        return old_walker
     end
 end
 
@@ -124,7 +128,7 @@ end
 
 #     theta_min = theta - 2.0*π
 #     theta_max = theta
-    
+
 #     f = walker.params
 #     while true
 #         stheta, ctheta = sincos(theta)
@@ -136,7 +140,7 @@ end
 #         if new_walker.lp > y
 #             return new_walker
 #         else
-#             if theta < 0 
+#             if theta < 0
 #                 theta_min = theta
 #             else
 #                 theta_max = theta
@@ -144,7 +148,7 @@ end
 
 #             theta = theta_min + (theta_max - theta_min) * rand()
 #         end
-#     end 
+#     end
 # end
 
 #####################
@@ -180,15 +184,15 @@ end
 
 #     theta_min = theta - 2.0*π
 #     theta_max = theta
-    
+
 #     f = walker.params
 
 #     i = 0
 #     while true
 #         i += 1
-        
+
 #         stheta, ctheta = sincos(theta)
-        
+
 #         f_prime = f .* ctheta + nu .* stheta
 
 #         new_walker = Transition(model, f_prime)
@@ -198,7 +202,7 @@ end
 #         if new_walker.lp > y
 #             return new_walker
 #         else
-#             if theta < 0 
+#             if theta < 0
 #                 theta_min = theta
 #             else
 #                 theta_max = theta
@@ -206,5 +210,5 @@ end
 
 #             theta = theta_min + (theta_max - theta_min) * rand()
 #         end
-#     end 
+#     end
 # end
