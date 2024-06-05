@@ -262,11 +262,17 @@ include("util.jl")
     @testset "MALA" begin
         @testset "basic" begin
             # Set up the sampler.
-            σ² = 0.01
+            σ² = 1e-3
             spl1 = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
 
             # Sample from the posterior with initial parameters.
-            chain1 = sample(model, spl1, 100000; initial_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+            chain1 = sample(
+                model, spl1, 1000;
+                initial_params=ones(2),
+                chain_type=StructArray,
+                param_names=["μ", "σ"],
+                discard_initial=100
+            )
 
             @test mean(chain1.μ) ≈ 0.0 atol = 0.1
             @test mean(chain1.σ) ≈ 1.0 atol = 0.1
@@ -276,10 +282,11 @@ include("util.jl")
                 chain2 = sample(
                     admodel,
                     spl1,
-                    100000;
+                    1000;
                     initial_params=ones(2),
                     chain_type=StructArray,
-                    param_names=["μ", "σ"]
+                    param_names=["μ", "σ"],
+                    discard_initial=100,
                 )
 
                 @test mean(chain2.μ) ≈ 0.0 atol = 0.1
@@ -310,6 +317,7 @@ include("util.jl")
             data = stack([c.params for c = chain])
             Σ_est = cov(data, dims=2)
 
+            @test mean(data, dims=2) ≈ zeros(2) atol = 0.1
             @test Σ ≈ Σ_est atol = 2e-1
         end
     end
