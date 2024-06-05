@@ -62,8 +62,8 @@ function AbstractMCMC.step(
 
     # Compute the log ratio of proposal densities.
     logratio_proposal_density = q(
-        proposal(-gradient_logdensity_candidate), state, candidate
-    ) - q(proposal(-gradient_logdensity_state), candidate, state)
+        proposal(gradient_logdensity_candidate), state, candidate
+    ) - q(proposal(gradient_logdensity_state), candidate, state)
 
     # Compute the log acceptance probability.
     logα = logdensity_candidate - logdensity_state + logratio_proposal_density

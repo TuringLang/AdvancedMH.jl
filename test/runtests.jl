@@ -260,29 +260,57 @@ include("util.jl")
     end
 
     @testset "MALA" begin
-        # Set up the sampler.
-        σ² = 0.01
-        spl1 = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
+        @testset "basic" begin
+            # Set up the sampler.
+            σ² = 0.01
+            spl1 = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
 
-        # Sample from the posterior with initial parameters.
-        chain1 = sample(model, spl1, 100000; initial_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
+            # Sample from the posterior with initial parameters.
+            chain1 = sample(model, spl1, 100000; initial_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
 
-        @test mean(chain1.μ) ≈ 0.0 atol=0.1
-        @test mean(chain1.σ) ≈ 1.0 atol=0.1
+            @test mean(chain1.μ) ≈ 0.0 atol = 0.1
+            @test mean(chain1.σ) ≈ 1.0 atol = 0.1
 
-        @testset "LogDensityProblems interface" begin
-            admodel = LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), density)
-            chain2 = sample(
-                admodel,
-                spl1,
-                100000;
-                initial_params=ones(2),
-                chain_type=StructArray,
-                param_names=["μ", "σ"]
-            )
+            @testset "LogDensityProblems interface" begin
+                admodel = LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), density)
+                chain2 = sample(
+                    admodel,
+                    spl1,
+                    100000;
+                    initial_params=ones(2),
+                    chain_type=StructArray,
+                    param_names=["μ", "σ"]
+                )
 
-            @test mean(chain2.μ) ≈ 0.0 atol=0.1
-            @test mean(chain2.σ) ≈ 1.0 atol=0.1
+                @test mean(chain2.μ) ≈ 0.0 atol = 0.1
+                @test mean(chain2.σ) ≈ 1.0 atol = 0.1
+            end
+        end
+
+        @testset "issue #95" begin
+            struct TheNormalLogDensity{M}
+                A::M
+            end
+
+            # can do gradient
+            LogDensityProblems.capabilities(::Type{<:TheNormalLogDensity}) = LogDensityProblems.LogDensityOrder{1}()
+
+            LogDensityProblems.dimension(d::TheNormalLogDensity) = size(d.A, 1)
+            LogDensityProblems.logdensity(d::TheNormalLogDensity, x) = -x' * d.A * x / 2
+
+            function LogDensityProblems.logdensity_and_gradient(d::TheNormalLogDensity, x)
+                return -x' * d.A * x / 2, -d.A * x
+            end
+
+            Σ = [1.5 0.35; 0.35 1.0]
+            σ² = 0.5
+            spl = AdvancedMH.MALA(g -> Distributions.MvNormal((σ² / 2) .* g, σ² * I))
+
+            chain = AdvancedMH.sample(TheNormalLogDensity(inv(Σ)), spl, 500000; initial_params=ones(2))
+            data = stack([c.params for c = chain])
+            Σ_est = cov(data, dims=2)
+
+            @test Σ ≈ Σ_est atol = 2e-1
         end
     end
 
