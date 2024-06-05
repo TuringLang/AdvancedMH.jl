@@ -227,7 +227,8 @@ include("util.jl")
             ))
             chain1 = sample(
                 m1, MetropolisHastings(p2), 100000;
-                chain_type=StructArray, param_names=["x"]
+                chain_type=StructArray, param_names=["x"],
+                progress=false
             )
             @test mean(chain1.x) ≈ mean(d1) atol=0.05
             @test std(chain1.x) ≈ std(d1) atol=0.05
@@ -271,7 +272,8 @@ include("util.jl")
                 initial_params=ones(2),
                 chain_type=StructArray,
                 param_names=["μ", "σ"],
-                discard_initial=100
+                discard_initial=100,
+                progress=false
             )
 
             @test mean(chain1.μ) ≈ 0.0 atol = 0.1
@@ -287,6 +289,7 @@ include("util.jl")
                     chain_type=StructArray,
                     param_names=["μ", "σ"],
                     discard_initial=100,
+                    progress=false
                 )
 
                 @test mean(chain2.μ) ≈ 0.0 atol = 0.1
@@ -313,8 +316,14 @@ include("util.jl")
             σ² = 0.5
             spl = AdvancedMH.MALA(g -> Distributions.MvNormal((σ² / 2) .* g, σ² * I))
 
-            chain = AdvancedMH.sample(TheNormalLogDensity(inv(Σ)), spl, 500000; initial_params=ones(2))
-            data = stack([c.params for c = chain])
+            chain = sample(
+                TheNormalLogDensity(inv(Σ)),
+                spl,
+                500000;
+                initial_params=ones(2),
+                progress=false
+            )
+            data = mapreduce(Base.Fix2(getproperty, :params), hcat, chain)
             Σ_est = cov(data, dims=2)
 
             @test mean(data, dims=2) ≈ zeros(2) atol = 0.1
