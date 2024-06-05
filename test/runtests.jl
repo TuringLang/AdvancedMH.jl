@@ -40,9 +40,9 @@ include("util.jl")
         spl3 = StaticMH(2)
 
         # Sample from the posterior.
-        chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
-        chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"])
-        chain3 = sample(model, spl3, 100000; chain_type=StructArray, param_names=["μ", "σ"])
+        chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
+        chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
+        chain3 = sample(model, spl3, 100000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
 
         # chn_mean ≈ dist_mean atol=atol_v
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
@@ -60,9 +60,9 @@ include("util.jl")
         spl3 = RWMH(2)
 
         # Sample from the posterior.
-        chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
-        chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"])
-        chain3 = sample(model, spl3, 200000; chain_type=StructArray, param_names=["μ", "σ"])
+        chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
+        chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
+        chain3 = sample(model, spl3, 200000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
 
         # chn_mean ≈ dist_mean atol=atol_v
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
@@ -77,13 +77,13 @@ include("util.jl")
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
 
         chain1 = sample(model, spl1, MCMCDistributed(), 10000, 4;
-                        param_names=["μ", "σ"], chain_type=Chains)
+                        param_names=["μ", "σ"], chain_type=Chains, progress=false)
         @test mean(chain1["μ"]) ≈ 0.0 atol=0.1
         @test mean(chain1["σ"]) ≈ 1.0 atol=0.1
 
         if VERSION >= v"1.3"
             chain2 = sample(model, spl1, MCMCThreads(), 10000, 4;
-                            param_names=["μ", "σ"], chain_type=Chains)
+                            param_names=["μ", "σ"], chain_type=Chains, progress=false)
             @test mean(chain2["μ"]) ≈ 0.0 atol=0.1
             @test mean(chain2["σ"]) ≈ 1.0 atol=0.1
         end
@@ -93,7 +93,7 @@ include("util.jl")
         # Array of parameters
         chain1 = sample(
             model, StaticMH([Normal(0,1), Normal(0, 1)]), 10_000;
-            param_names=["μ", "σ"], chain_type=Chains
+            param_names=["μ", "σ"], chain_type=Chains, progress=false
         )
         @test chain1 isa Chains
         @test range(chain1) == 1:10_000
@@ -103,6 +103,7 @@ include("util.jl")
         chain1b = sample(
             model, StaticMH([Normal(0,1), Normal(0, 1)]), 10_000;
             param_names=["μ", "σ"], chain_type=Chains, discard_initial=25, thinning=4,
+            progress=false
         )
         @test chain1b isa Chains
         @test range(chain1b) == range(26; step=4, length=10_000)
@@ -115,7 +116,8 @@ include("util.jl")
             MetropolisHastings(
                 (μ = StaticProposal(Normal(0,1)), σ = StaticProposal(Normal(0, 1)))
             ), 10_000;
-            chain_type=Chains
+            chain_type=Chains,
+            progress=false
         )
         @test chain2 isa Chains
         @test range(chain2) == 1:10_000
@@ -128,6 +130,7 @@ include("util.jl")
                 (μ = StaticProposal(Normal(0,1)), σ = StaticProposal(Normal(0, 1)))
             ), 10_000;
             chain_type=Chains, discard_initial=25, thinning=4,
+            progress=false
         )
         @test chain2b isa Chains
         @test range(chain2b) == range(26; step=4, length=10_000)
@@ -137,7 +140,8 @@ include("util.jl")
         # Scalar parameter
         chain3 = sample(
             DensityModel(x -> loglikelihood(Normal(x, 1), data)),
-            StaticMH(Normal(0, 1)), 10_000; param_names=["μ"], chain_type=Chains
+            StaticMH(Normal(0, 1)), 10_000; param_names=["μ"], chain_type=Chains,
+            progress=false
         )
         @test chain3 isa Chains
         @test range(chain3) == 1:10_000
@@ -147,6 +151,7 @@ include("util.jl")
             DensityModel(x -> loglikelihood(Normal(x, 1), data)),
             StaticMH(Normal(0, 1)), 10_000;
             param_names=["μ"], chain_type=Chains, discard_initial=25, thinning=4,
+            progress=false
         )
         @test chain3b isa Chains
         @test range(chain3b) == range(26; step=4, length=10_000)
@@ -164,10 +169,10 @@ include("util.jl")
         p3 = (a=StaticProposal(Normal(0,1)), b=StaticProposal(InverseGamma(2,3)))
         p4 = StaticProposal((x=1.0) -> Normal(x, 1))
 
-        c1 = sample(m1, MetropolisHastings(p1), 100; chain_type=Vector{NamedTuple})
-        c2 = sample(m2, MetropolisHastings(p2), 100; chain_type=Vector{NamedTuple})
-        c3 = sample(m3, MetropolisHastings(p3), 100; chain_type=Vector{NamedTuple})
-        c4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Vector{NamedTuple})
+        c1 = sample(m1, MetropolisHastings(p1), 100; chain_type=Vector{NamedTuple}, progress=false)
+        c2 = sample(m2, MetropolisHastings(p2), 100; chain_type=Vector{NamedTuple}, progress=false)
+        c3 = sample(m3, MetropolisHastings(p3), 100; chain_type=Vector{NamedTuple}, progress=false)
+        c4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Vector{NamedTuple}, progress=false)
 
         @test keys(c1[1]) == (:param_1, :lp)
         @test keys(c2[1]) == (:param_1, :param_2, :lp)
@@ -182,7 +187,7 @@ include("util.jl")
         val = [0.4, 1.2]
 
         # Sample from the posterior.
-        chain1 = sample(model, spl1, 10, initial_params = val)
+        chain1 = sample(model, spl1, 10, initial_params = val, progress=false)
 
         @test chain1[1].params == val
     end
@@ -199,12 +204,12 @@ include("util.jl")
         p1 = RandomWalkProposal(CustomNormal())
         @test p1 isa RandomWalkProposal{false}
         @test_throws MethodError AdvancedMH.logratio_proposal_density(p1, randn(), randn())
-        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10)
+        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10, progress=false)
 
         p1 = StaticProposal(x -> CustomNormal(x))
         @test p1 isa StaticProposal{false}
         @test_throws MethodError AdvancedMH.logratio_proposal_density(p1, randn(), randn())
-        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10)
+        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10, progress=false)
 
         # If the proposal is declared to be symmetric, the log ratio of the proposal
         # density is not evaluated.
