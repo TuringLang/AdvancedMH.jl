@@ -40,9 +40,9 @@ include("util.jl")
         spl3 = StaticMH(2)
 
         # Sample from the posterior.
-        chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
-        chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"])
-        chain3 = sample(model, spl3, 100000; chain_type=StructArray, param_names=["μ", "σ"])
+        chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
+        chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
+        chain3 = sample(model, spl3, 100000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
 
         # chn_mean ≈ dist_mean atol=atol_v
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
@@ -60,9 +60,9 @@ include("util.jl")
         spl3 = RWMH(2)
 
         # Sample from the posterior.
-        chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"])
-        chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"])
-        chain3 = sample(model, spl3, 200000; chain_type=StructArray, param_names=["μ", "σ"])
+        chain1 = sample(model, spl1, 100000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
+        chain2 = sample(model, spl2, 100000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
+        chain3 = sample(model, spl3, 200000; chain_type=StructArray, param_names=["μ", "σ"], progress=false)
 
         # chn_mean ≈ dist_mean atol=atol_v
         @test mean(chain1.μ) ≈ 0.0 atol=0.1
@@ -77,13 +77,13 @@ include("util.jl")
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
 
         chain1 = sample(model, spl1, MCMCDistributed(), 10000, 4;
-                        param_names=["μ", "σ"], chain_type=Chains)
+                        param_names=["μ", "σ"], chain_type=Chains, progress=false)
         @test mean(chain1["μ"]) ≈ 0.0 atol=0.1
         @test mean(chain1["σ"]) ≈ 1.0 atol=0.1
 
         if VERSION >= v"1.3"
             chain2 = sample(model, spl1, MCMCThreads(), 10000, 4;
-                            param_names=["μ", "σ"], chain_type=Chains)
+                            param_names=["μ", "σ"], chain_type=Chains, progress=false)
             @test mean(chain2["μ"]) ≈ 0.0 atol=0.1
             @test mean(chain2["σ"]) ≈ 1.0 atol=0.1
         end
@@ -93,7 +93,7 @@ include("util.jl")
         # Array of parameters
         chain1 = sample(
             model, StaticMH([Normal(0,1), Normal(0, 1)]), 10_000;
-            param_names=["μ", "σ"], chain_type=Chains
+            param_names=["μ", "σ"], chain_type=Chains, progress=false
         )
         @test chain1 isa Chains
         @test range(chain1) == 1:10_000
@@ -103,6 +103,7 @@ include("util.jl")
         chain1b = sample(
             model, StaticMH([Normal(0,1), Normal(0, 1)]), 10_000;
             param_names=["μ", "σ"], chain_type=Chains, discard_initial=25, thinning=4,
+            progress=false
         )
         @test chain1b isa Chains
         @test range(chain1b) == range(26; step=4, length=10_000)
@@ -115,7 +116,8 @@ include("util.jl")
             MetropolisHastings(
                 (μ = StaticProposal(Normal(0,1)), σ = StaticProposal(Normal(0, 1)))
             ), 10_000;
-            chain_type=Chains
+            chain_type=Chains,
+            progress=false
         )
         @test chain2 isa Chains
         @test range(chain2) == 1:10_000
@@ -128,6 +130,7 @@ include("util.jl")
                 (μ = StaticProposal(Normal(0,1)), σ = StaticProposal(Normal(0, 1)))
             ), 10_000;
             chain_type=Chains, discard_initial=25, thinning=4,
+            progress=false
         )
         @test chain2b isa Chains
         @test range(chain2b) == range(26; step=4, length=10_000)
@@ -137,7 +140,8 @@ include("util.jl")
         # Scalar parameter
         chain3 = sample(
             DensityModel(x -> loglikelihood(Normal(x, 1), data)),
-            StaticMH(Normal(0, 1)), 10_000; param_names=["μ"], chain_type=Chains
+            StaticMH(Normal(0, 1)), 10_000; param_names=["μ"], chain_type=Chains,
+            progress=false
         )
         @test chain3 isa Chains
         @test range(chain3) == 1:10_000
@@ -147,6 +151,7 @@ include("util.jl")
             DensityModel(x -> loglikelihood(Normal(x, 1), data)),
             StaticMH(Normal(0, 1)), 10_000;
             param_names=["μ"], chain_type=Chains, discard_initial=25, thinning=4,
+            progress=false
         )
         @test chain3b isa Chains
         @test range(chain3b) == range(26; step=4, length=10_000)
@@ -164,10 +169,10 @@ include("util.jl")
         p3 = (a=StaticProposal(Normal(0,1)), b=StaticProposal(InverseGamma(2,3)))
         p4 = StaticProposal((x=1.0) -> Normal(x, 1))
 
-        c1 = sample(m1, MetropolisHastings(p1), 100; chain_type=Vector{NamedTuple})
-        c2 = sample(m2, MetropolisHastings(p2), 100; chain_type=Vector{NamedTuple})
-        c3 = sample(m3, MetropolisHastings(p3), 100; chain_type=Vector{NamedTuple})
-        c4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Vector{NamedTuple})
+        c1 = sample(m1, MetropolisHastings(p1), 100; chain_type=Vector{NamedTuple}, progress=false)
+        c2 = sample(m2, MetropolisHastings(p2), 100; chain_type=Vector{NamedTuple}, progress=false)
+        c3 = sample(m3, MetropolisHastings(p3), 100; chain_type=Vector{NamedTuple}, progress=false)
+        c4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Vector{NamedTuple}, progress=false)
 
         @test keys(c1[1]) == (:param_1, :lp)
         @test keys(c2[1]) == (:param_1, :param_2, :lp)
@@ -182,7 +187,7 @@ include("util.jl")
         val = [0.4, 1.2]
 
         # Sample from the posterior.
-        chain1 = sample(model, spl1, 10, initial_params = val)
+        chain1 = sample(model, spl1, 10, initial_params = val, progress=false)
 
         @test chain1[1].params == val
     end
@@ -199,12 +204,12 @@ include("util.jl")
         p1 = RandomWalkProposal(CustomNormal())
         @test p1 isa RandomWalkProposal{false}
         @test_throws MethodError AdvancedMH.logratio_proposal_density(p1, randn(), randn())
-        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10)
+        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10, progress=false)
 
         p1 = StaticProposal(x -> CustomNormal(x))
         @test p1 isa StaticProposal{false}
         @test_throws MethodError AdvancedMH.logratio_proposal_density(p1, randn(), randn())
-        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10)
+        @test_throws MethodError sample(m1, MetropolisHastings(p1), 10, progress=false)
 
         # If the proposal is declared to be symmetric, the log ratio of the proposal
         # density is not evaluated.
@@ -227,7 +232,8 @@ include("util.jl")
             ))
             chain1 = sample(
                 m1, MetropolisHastings(p2), 100000;
-                chain_type=StructArray, param_names=["x"]
+                chain_type=StructArray, param_names=["x"],
+                progress=false
             )
             @test mean(chain1.x) ≈ mean(d1) atol=0.05
             @test std(chain1.x) ≈ std(d1) atol=0.05
@@ -260,29 +266,73 @@ include("util.jl")
     end
 
     @testset "MALA" begin
-        # Set up the sampler.
-        σ² = 0.01
-        spl1 = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
+        @testset "basic" begin
+            # Set up the sampler.
+            σ² = 1e-3
+            spl1 = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
 
-        # Sample from the posterior with initial parameters.
-        chain1 = sample(model, spl1, 100000; initial_params=ones(2), chain_type=StructArray, param_names=["μ", "σ"])
-
-        @test mean(chain1.μ) ≈ 0.0 atol=0.1
-        @test mean(chain1.σ) ≈ 1.0 atol=0.1
-
-        @testset "LogDensityProblems interface" begin
-            admodel = LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), density)
-            chain2 = sample(
-                admodel,
-                spl1,
-                100000;
+            # Sample from the posterior with initial parameters.
+            chain1 = sample(
+                model, spl1, 1000;
                 initial_params=ones(2),
                 chain_type=StructArray,
-                param_names=["μ", "σ"]
+                param_names=["μ", "σ"],
+                discard_initial=100,
+                progress=false
             )
 
-            @test mean(chain2.μ) ≈ 0.0 atol=0.1
-            @test mean(chain2.σ) ≈ 1.0 atol=0.1
+            @test mean(chain1.μ) ≈ 0.0 atol = 0.1
+            @test mean(chain1.σ) ≈ 1.0 atol = 0.1
+
+            @testset "LogDensityProblems interface" begin
+                admodel = LogDensityProblemsAD.ADgradient(Val(:ForwardDiff), density)
+                chain2 = sample(
+                    admodel,
+                    spl1,
+                    1000;
+                    initial_params=ones(2),
+                    chain_type=StructArray,
+                    param_names=["μ", "σ"],
+                    discard_initial=100,
+                    progress=false
+                )
+
+                @test mean(chain2.μ) ≈ 0.0 atol = 0.1
+                @test mean(chain2.σ) ≈ 1.0 atol = 0.1
+            end
+        end
+
+        @testset "issue #95" begin
+            struct TheNormalLogDensity{M}
+                A::M
+            end
+
+            # can do gradient
+            LogDensityProblems.capabilities(::Type{<:TheNormalLogDensity}) = LogDensityProblems.LogDensityOrder{1}()
+
+            LogDensityProblems.dimension(d::TheNormalLogDensity) = size(d.A, 1)
+            LogDensityProblems.logdensity(d::TheNormalLogDensity, x) = -x' * d.A * x / 2
+
+            function LogDensityProblems.logdensity_and_gradient(d::TheNormalLogDensity, x)
+                return -x' * d.A * x / 2, -d.A * x
+            end
+
+            Σ = [1.5 0.35; 0.35 1.0]
+            σ² = 0.5
+            spl = AdvancedMH.MALA(g -> Distributions.MvNormal((σ² / 2) .* g, σ² * I))
+
+            chain = sample(
+                TheNormalLogDensity(inv(Σ)),
+                spl,
+                500000;
+                initial_params=ones(2),
+                progress=false
+            )
+            data = mapreduce(Base.Fix2(getproperty, :params), hcat, chain)
+            Σ_est = cov(data, dims=2)
+
+            @test mean(data, dims=2) ≈ zeros(2) atol = 0.1
+            @test Σ ≈ Σ_est atol = 2e-1
         end
     end
 
