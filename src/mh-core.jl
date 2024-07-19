@@ -13,7 +13,7 @@ The proposal would be
 
 ```julia
 proposal = (a=StaticProposal(Normal(0,1)), b=StaticProposal(Normal(0,1)))
-````
+```
 
 Other allowed proposals are
 
