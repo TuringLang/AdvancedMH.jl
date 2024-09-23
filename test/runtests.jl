@@ -271,6 +271,15 @@ include("util.jl")
             σ² = 1e-3
             spl1 = MALA(x -> MvNormal((σ² / 2) .* x, σ² * I))
 
+            # Without `initial_params` this should error.
+            @test_throws ErrorException sample(
+                model, spl1, 1000;
+                chain_type=StructArray,
+                param_names=["μ", "σ"],
+                discard_initial=100,
+                progress=false
+            )
+
             # Sample from the posterior with initial parameters.
             chain1 = sample(
                 model, spl1, 1000;
