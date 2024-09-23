@@ -20,7 +20,7 @@ end
 
 logdensity(model::DensityModelOrLogDensityModel, t::GradientTransition) = t.lp
 
-propose(rng::Random.AbstractRNG, ::MALA, model) = error("please specify initial parameters")
+propose(::Random.AbstractRNG, ::MALA, ::DensityModelOrLogDensityModel) = error("please specify initial parameters")
 function transition(sampler::MALA, model::DensityModelOrLogDensityModel, params, accepted)
     return GradientTransition(params, logdensity_and_gradient(model, params)..., accepted)
 end
