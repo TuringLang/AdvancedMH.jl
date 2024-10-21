@@ -2,6 +2,7 @@ module AdvancedMH
 
 # Import the relevant libraries.
 using AbstractMCMC
+using AbstractMCMC: BangBang
 using Distributions
 using LinearAlgebra: I
 using FillArrays: Zeros
@@ -138,6 +139,15 @@ function __init__()
             @require ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210" include("../ext/AdvancedMHForwardDiffExt.jl")
         end
     end
+end
+
+# AbstractMCMC.jl interface
+function AbstractMCMC.getparams(t::Transition)
+    return t.params
+end
+
+function AbstractMCMC.setparams!!(t::Transition, params)
+    return BangBang.setproperty!!(t, :params, params)
 end
 
 # Include inference methods.

@@ -1,4 +1,5 @@
 using AdvancedMH
+using AbstractMCMC
 using DiffResults
 using Distributions
 using ForwardDiff
@@ -32,6 +33,15 @@ include("util.jl")
     # `LogDensityModel`
     LogDensityProblems.logdensity(::typeof(density), θ) = density(θ)
     LogDensityProblems.dimension(::typeof(density)) = 2
+
+    @testset "getparams/setparams!! (AbstractMCMC interface)" begin
+        test_spl = StaticMH([Normal(0, 1), Normal(0, 1)])
+        t, _ = AbstractMCMC.step(Random.default_rng(), model, test_spl)
+        @test AbstractMCMC.getparams(t) == t.params
+        @test AbstractMCMC.setparams!!(t, AbstractMCMC.getparams(t)) == t
+        t_replaced = AbstractMCMC.setparams!!(t, (μ=1.0, σ=2.0))
+        @test t_replaced.params == (μ=1.0, σ=2.0)
+    end
 
     @testset "StaticMH" begin
         # Set up our sampler with initial parameters.
