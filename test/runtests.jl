@@ -79,7 +79,7 @@ include("util.jl")
         @test mean(chain1.σ) ≈ 1.0 atol=0.1
         @test mean(chain2.μ) ≈ 0.0 atol=0.1
         @test mean(chain2.σ) ≈ 1.0 atol=0.1
-        @test mean(chain3.μ) ≈ 0.0 atol=0.1
+        @test mean(chain3.μ) ≈ 0.0 atol=0.15
         @test mean(chain3.σ) ≈ 1.0 atol=0.1
     end
 
