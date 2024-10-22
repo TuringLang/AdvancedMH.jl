@@ -11,7 +11,7 @@ MALA(d::RandomWalkProposal) = MALA{typeof(d)}(d)
 MALA(d) = MALA(RandomWalkProposal(d))
 
 
-struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{Vector, Real, NamedTuple}} <: AbstractTransition
+struct GradientTransition{T<:Union{Vector,Real,NamedTuple},L<:Real,G<:Union{Vector,Real,NamedTuple}} <: AbstractTransition
     params::T
     lp::L
     gradient::G
@@ -19,6 +19,14 @@ struct GradientTransition{T<:Union{Vector, Real, NamedTuple}, L<:Real, G<:Union{
 end
 
 logdensity(model::DensityModelOrLogDensityModel, t::GradientTransition) = t.lp
+
+function AbstractMCMC.getparams(t::GradientTransition)
+    return t.params
+end
+
+function AbstractMCMC.setparams!!(t::GradientTransition, params)
+    return BangBang.setproperty!!(t, :params, params)
+end
 
 propose(::Random.AbstractRNG, ::MALA, ::DensityModelOrLogDensityModel) = error("please specify initial parameters")
 function transition(sampler::MALA, model::DensityModelOrLogDensityModel, params, accepted)
@@ -88,6 +96,6 @@ logdensity_and_gradient(::DensityModelOrLogDensityModel, ::Any)
 function logdensity_and_gradient(model::AbstractMCMC.LogDensityModel, params)
     check_capabilities(model)
     return LogDensityProblems.logdensity_and_gradient(model.logdensity, params)
- end
+end
 
 
