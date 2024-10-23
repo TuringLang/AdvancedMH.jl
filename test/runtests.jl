@@ -35,12 +35,14 @@ include("util.jl")
     LogDensityProblems.dimension(::typeof(density)) = 2
 
     @testset "getparams/setparams!! (AbstractMCMC interface)" begin
-        test_spl = StaticMH([Normal(0, 1), Normal(0, 1)])
-        t, _ = AbstractMCMC.step(Random.default_rng(), model, test_spl)
-        @test AbstractMCMC.getparams(t) == t.params
-        @test AbstractMCMC.setparams!!(t, AbstractMCMC.getparams(t)) == t
-        t_replaced = AbstractMCMC.setparams!!(t, (μ=1.0, σ=2.0))
-        @test t_replaced.params == (μ=1.0, σ=2.0)
+        t1, _ = AbstractMCMC.step(Random.default_rng(), model, StaticMH([Normal(0, 1), Normal(0, 1)]))
+        t2, _ = AbstractMCMC.step(Random.default_rng(), model, MALA(x -> MvNormal(x, I)); initial_params=ones(2))
+        for t in [t1, t2]
+            @test AbstractMCMC.getparams(t) == t.params
+            @test AbstractMCMC.setparams!!(t, AbstractMCMC.getparams(t)) == t
+            t_replaced = AbstractMCMC.setparams!!(t, (μ=1.0, σ=2.0))
+            @test t_replaced.params == (μ=1.0, σ=2.0)
+        end
     end
 
     @testset "StaticMH" begin
