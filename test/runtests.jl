@@ -39,8 +39,8 @@ include("util.jl")
         t2, _ = AbstractMCMC.step(Random.default_rng(), model, MALA(x -> MvNormal(x, I)); initial_params=ones(2))
         for t in [t1, t2]
             @test AbstractMCMC.getparams(t) == t.params
-            @test AbstractMCMC.setparams!!(t, AbstractMCMC.getparams(t)) == t
-            t_replaced = AbstractMCMC.setparams!!(t, (μ=1.0, σ=2.0))
+            @test AbstractMCMC.setparams!!(model, t, AbstractMCMC.getparams(t)) == t
+            t_replaced = AbstractMCMC.setparams!!(model, t, (μ=1.0, σ=2.0))
             @test t_replaced.params == (μ=1.0, σ=2.0)
         end
     end

@@ -146,8 +146,9 @@ function AbstractMCMC.getparams(t::Transition)
     return t.params
 end
 
-function AbstractMCMC.setparams!!(t::Transition, params)
-    return BangBang.setproperty!!(t, :params, params)
+function AbstractMCMC.setparams!!(model::AbstractMCMC.LogDensityModel, t::Transition, params)
+    t = BangBang.setproperty!!(t, :params, params)
+    return BangBang.setproperty!!(t, :lp, LogDensityProblems.logdensity(model.logdensity, params))
 end
 
 # Include inference methods.

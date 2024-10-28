@@ -24,7 +24,7 @@ AdvancedMHMCMCChainsExt = "MCMCChains"
 AdvancedMHStructArraysExt = "StructArrays"
 
 [compat]
-AbstractMCMC = "5.5"
+AbstractMCMC = "5.6"
 BangBang = "0.3.19, 0.4"
 DiffResults = "1"
 Distributions = "0.25"

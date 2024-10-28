@@ -24,8 +24,12 @@ function AbstractMCMC.getparams(t::GradientTransition)
     return t.params
 end
 
-function AbstractMCMC.setparams!!(t::GradientTransition, params)
-    return BangBang.setproperty!!(t, :params, params)
+function AbstractMCMC.setparams!!(model::AbstractMCMC.LogDensityModel, t::GradientTransition, params)
+    return AdvancedMH.GradientTransition(
+        params,
+        AdvancedMH.logdensity_and_gradient(model.logdensity, params)...,
+        t.accepted
+    )
 end
 
 propose(::Random.AbstractRNG, ::MALA, ::DensityModelOrLogDensityModel) = error("please specify initial parameters")
