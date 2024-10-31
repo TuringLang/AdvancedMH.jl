@@ -38,10 +38,18 @@ include("util.jl")
         t1, _ = AbstractMCMC.step(Random.default_rng(), model, StaticMH([Normal(0, 1), Normal(0, 1)]))
         t2, _ = AbstractMCMC.step(Random.default_rng(), model, MALA(x -> MvNormal(x, I)); initial_params=ones(2))
         for t in [t1, t2]
-            @test AbstractMCMC.getparams(t) == t.params
-            @test AbstractMCMC.setparams!!(model, t, AbstractMCMC.getparams(t)) == t
-            t_replaced = AbstractMCMC.setparams!!(model, t, (μ=1.0, σ=2.0))
-            @test t_replaced.params == (μ=1.0, σ=2.0)
+            @test AbstractMCMC.getparams(model, t) == t.params
+            
+            new_transition = AbstractMCMC.setparams!!(model, t, AbstractMCMC.getparams(model, t))
+            @test new_transition.lp == t.lp
+            @test new_transition.accepted == t.accepted
+            @test new_transition.params == t.params
+            if hasfield(typeof(t), :gradient)
+                @test new_transition.gradient == t.gradient
+            end
+            
+            t_replaced = AbstractMCMC.setparams!!(model, t, [1.0, 2.0])
+            @test t_replaced.params == [1.0, 2.0]
         end
     end
 

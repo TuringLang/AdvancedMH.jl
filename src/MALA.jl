@@ -24,10 +24,12 @@ function AbstractMCMC.getparams(t::GradientTransition)
     return t.params
 end
 
-function AbstractMCMC.setparams!!(model::AbstractMCMC.LogDensityModel, t::GradientTransition, params)
-    return AdvancedMH.GradientTransition(
+function AbstractMCMC.setparams!!(model::DensityModelOrLogDensityModel, t::GradientTransition, params)
+    lp, gradient = logdensity_and_gradient(model, params)
+    return GradientTransition(
         params,
-        AdvancedMH.logdensity_and_gradient(model.logdensity, params)...,
+        lp,
+        gradient,
         t.accepted
     )
 end
