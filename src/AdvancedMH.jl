@@ -2,7 +2,6 @@ module AdvancedMH
 
 # Import the relevant libraries.
 using AbstractMCMC
-using BangBang
 using Distributions
 using LinearAlgebra: I
 using FillArrays: Zeros
