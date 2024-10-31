@@ -140,6 +140,20 @@ function __init__()
     end
 end
 
+# AbstractMCMC.jl interface
+function AbstractMCMC.getparams(t::Transition)
+    return t.params
+end
+
+# TODO (sunxd): remove `DensityModel` in favor of `AbstractMCMC.LogDensityModel`
+function AbstractMCMC.setparams!!(model::DensityModelOrLogDensityModel, t::Transition, params)
+    return Transition(
+        params,
+        logdensity(model, params),
+        t.accepted
+    )
+end
+
 # Include inference methods.
 include("proposal.jl")
 include("mh-core.jl")
