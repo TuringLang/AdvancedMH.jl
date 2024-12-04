@@ -73,6 +73,10 @@ Base.@kwdef struct RAM{T,A<:Union{Nothing,AbstractMatrix{T}}} <: AdvancedMH.MHSa
     γ::T=0.6
     "initial covariance matrix"
     S::A=nothing
+    "lower bound on eigenvalues of the adapted covariance matrix"
+    eigenvalue_lower_bound::T=0
+    "upper bound on eigenvalues of the adapted covariance matrix"
+    eigenvalue_upper_bound::T=Inf
 end
 
 # TODO: Should we record anything like the acceptance rates?
@@ -164,9 +168,18 @@ function AbstractMCMC.step(
 )
     # Take the inner step.
     x_new, lp_new, U, logα, isaccept = step_inner(rng, model, sampler, state)
-    # Adapt the proposal.
+    # Accept / reject the proposal.
     state_new = RAMState(isaccept ? x_new : state.x, isaccept ? lp_new : state.logprob, state.S, logα, state.η, state.iteration + 1, isaccept)
     return AdvancedMH.Transition(state_new.x, state_new.logprob, state_new.isaccept), state_new
+end
+
+function valid_eigenvalues(S, lower_bound, upper_bound)
+    # Short-circuit if the bounds are the default.
+    (lower_bound == 0 && upper_bound == Inf) && return true
+    
+    # Note that this is just the diagonal when `S` is triangular.
+    eigenvals = LinearAlgebra.eigenvals(S)
+    return all(lower_bound .<= eigenvals .<= upper_bound)
 end
 
 function AbstractMCMC.step_warmup(
@@ -180,6 +193,12 @@ function AbstractMCMC.step_warmup(
     x_new, lp_new, U, logα, isaccept = step_inner(rng, model, sampler, state)
     # Adapt the proposal.
     S_new, η = adapt(sampler, state, logα, U)
+    # Check that `S_new` has eigenvalues in the desired range.
+    if !valid_eigenvalues(S_new, sampler.eigenvalue_lower_bound, sampler.eigenvalue_upper_bound)
+        # In this case, we just keep the old `S` (p. 13 in Vihola, 2012).
+        S_new = state.S
+    end
+
     # Update state.
     state_new = RAMState(isaccept ? x_new : state.x, isaccept ? lp_new : state.logprob, S_new, logα, η, state.iteration + 1, isaccept)
     return AdvancedMH.Transition(state_new.x, state_new.logprob, state_new.isaccept), state_new
