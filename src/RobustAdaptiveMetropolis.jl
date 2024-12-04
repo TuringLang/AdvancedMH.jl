@@ -176,7 +176,6 @@ end
 function valid_eigenvalues(S, lower_bound, upper_bound)
     # Short-circuit if the bounds are the default.
     (lower_bound == 0 && upper_bound == Inf) && return true
-    
     # Note that this is just the diagonal when `S` is triangular.
     eigenvals = LinearAlgebra.eigenvals(S)
     return all(lower_bound .<= eigenvals .<= upper_bound)
