@@ -1,0 +1,142 @@
+module RobustAdaptiveMetropolis
+
+using Random, LogDensityProblems, LinearAlgebra, AbstractMCMC
+using DocStringExtensions: FIELDS
+
+using AdvancedMH: AdvancedMH
+
+export RAM
+
+# TODO: Should we generalise this arbitrary symmetric proposals?
+# TODO: Implement checking of eigenvalues to avoid degenerate covariance estimates, as in the paper.
+"""
+    RAM
+
+Robust Adaptive Metropolis-Hastings (RAM).
+
+This is a simple implementation of the RAM algorithm described in [^VIH12].
+
+# Fields
+
+$(FIELDS)
+
+# References
+[^VIH12]: Vihola (2012) Robust adaptive Metropolis algorithm with coerced acceptance rate, Statistics and computing.
+"""
+Base.@kwdef struct RAM{T,A<:Union{Nothing,AbstractMatrix{T}}} <: AdvancedMH.MHSampler
+    "target acceptance rate"
+    α::T=0.234
+    "negative exponent of the adaptation decay rate"
+    γ::T=0.6
+    "initial covariance matrix"
+    S::A=nothing
+end
+
+# TODO: Should we record anything like the acceptance rates?
+struct RAMState{T1,L,A,T2,T3}
+    x::T1
+    logprob::L
+    S::A
+    logα::T2
+    η::T3
+    iteration::Int
+    isaccept::Bool
+end
+
+function step_inner(
+    rng::Random.AbstractRNG,
+    model::AbstractMCMC.LogDensityModel,
+    sampler::RAM,
+    state::RAMState
+)
+    # This is the initial state.
+    f = model.logdensity
+    d = LogDensityProblems.dimension(f)
+
+    # Sample the proposal.
+    x = state.x
+    U = randn(rng, d)
+    x_new = x + state.S * U
+
+    # Compute the acceptance probability.
+    lp = state.logprob
+    lp_new = LogDensityProblems.logdensity(f, x_new)
+    logα = min(lp_new - lp, zero(lp))  # `min` because we'll use this for updating
+    # TODO: use `randexp` instead.
+    isaccept = log(rand(rng)) < logα
+
+    return x_new, lp_new, U, logα, isaccept
+end
+
+function adapt(sampler::RAM, state::RAMState, logα::Real, U::AbstractVector)
+    # Update `
+    Δα = exp(logα) - sampler.α
+    S = state.S
+    # TODO: Make this configurable by defining a more general path.
+    η = state.iteration^(-sampler.γ)
+    ΔS = η * abs(Δα) * S * U / norm(U)
+    # TODO: Maybe do in-place and then have the user extract it with a callback if they really want it.
+    S_new = if sign(Δα) == 1
+        # One rank update.
+        LinearAlgebra.lowrankupdate(Cholesky(S), ΔS).L
+    else
+        # One rank downdate.
+        LinearAlgebra.lowrankdowndate(Cholesky(S), ΔS).L
+    end
+    return S_new, η
+end
+
+function AbstractMCMC.step(
+    rng::Random.AbstractRNG,
+    model::AbstractMCMC.LogDensityModel,
+    sampler::RAM;
+    initial_params=nothing,
+    kwargs...
+)
+    # This is the initial state.
+    f = model.logdensity
+    d = LogDensityProblems.dimension(f)
+
+    # Initial parameter state.
+    x = initial_params === nothing ? rand(rng, d) : initial_params
+    # Initialize the Cholesky factor of the covariance matrix.
+    S = LowerTriangular(sampler.S === nothing ? diagm(0 => ones(eltype(sampler.γ), d)) : sampler.S)
+
+    # Constuct the initial state.
+    lp = LogDensityProblems.logdensity(f, x)
+    state = RAMState(x, lp, S, 0.0, 0, 1, true)
+
+    return AdvancedMH.Transition(x, lp, true), state
+end
+
+function AbstractMCMC.step(
+    rng::Random.AbstractRNG,
+    model::AbstractMCMC.LogDensityModel,
+    sampler::RAM,
+    state::RAMState;
+    kwargs...
+)
+    # Take the inner step.
+    x_new, lp_new, U, logα, isaccept = step_inner(rng, model, sampler, state)
+    # Adapt the proposal.
+    state_new = RAMState(isaccept ? x_new : state.x, isaccept ? lp_new : state.logprob, state.S, logα, state.η, state.iteration + 1, isaccept)
+    return AdvancedMH.Transition(state_new.x, state_new.logprob, state_new.isaccept), state_new
+end
+
+function AbstractMCMC.step_warmup(
+    rng::Random.AbstractRNG,
+    model::AbstractMCMC.LogDensityModel,
+    sampler::RAM,
+    state::RAMState;
+    kwargs...
+)
+    # Take the inner step.
+    x_new, lp_new, U, logα, isaccept = step_inner(rng, model, sampler, state)
+    # Adapt the proposal.
+    S_new, η = adapt(sampler, state, logα, U)
+    # Update state.
+    state_new = RAMState(isaccept ? x_new : state.x, isaccept ? lp_new : state.logprob, S_new, logα, η, state.iteration + 1, isaccept)
+    return AdvancedMH.Transition(state_new.x, state_new.logprob, state_new.isaccept), state_new
+end
+
+end

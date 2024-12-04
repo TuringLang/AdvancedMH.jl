@@ -160,4 +160,8 @@ include("mh-core.jl")
 include("emcee.jl")
 include("MALA.jl")
 
+include("RobustAdaptiveMetropolis.jl")
+using .RobustAdaptiveMetropolis
+export RAM
+
 end # module AdvancedMH
