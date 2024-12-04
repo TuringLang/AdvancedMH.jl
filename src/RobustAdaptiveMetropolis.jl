@@ -25,7 +25,7 @@ $(FIELDS)
 The following demonstrates how to implement a simple Gaussian model and sample from it using the RAM algorithm.
 
 ```jldoctest
-julia> using AdvancedMH, Distributions, MCMCChains, LogDensityProblems
+julia> using AdvancedMH, Distributions, MCMCChains, LogDensityProblems, LinearAlgebra
 
 julia> # Define a Gaussian with zero mean and some covariance.
        struct Gaussian{A}
@@ -82,6 +82,9 @@ struct RAMState{T1,L,A,T2,T3}
     iteration::Int
     isaccept::Bool
 end
+
+AbstractMCMC.getparams(state::RAMState) = state.x
+AbstractMCMC.setparams!!(state::RAMState, x) = RAMState(x, state.logprob, state.S, state.logα, state.η, state.iteration, state.isaccept)
 
 function step_inner(
     rng::Random.AbstractRNG,
