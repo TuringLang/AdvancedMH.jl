@@ -12,3 +12,9 @@ MetropolisHastings
 ```@docs
 DensityModel
 ```
+
+## Samplers
+
+```@docs
+RAM
+```

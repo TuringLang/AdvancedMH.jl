@@ -20,6 +20,46 @@ This is a simple implementation of the RAM algorithm described in [^VIH12].
 
 $(FIELDS)
 
+# Examples
+
+The following demonstrates how to implement a simple Gaussian model and sample from it using the RAM algorithm.
+
+```jldoctest
+julia> using AdvancedMH, Distributions, MCMCChains, LogDensityProblems
+
+julia> # Define a Gaussian with zero mean and some covariance.
+       struct Gaussian{A}
+           Σ::A
+       end
+
+julia> # Implement the LogDensityProblems interface.
+       LogDensityProblems.dimension(model::Gaussian) = size(model.Σ, 1)
+
+julia> function LogDensityProblems.logdensity(model::Gaussian, x)
+           d = LogDensityProblems.dimension(model)
+           return logpdf(MvNormal(zeros(d),model.Σ), x)
+       end
+
+julia> LogDensityProblems.capabilities(::Gaussian) = LogDensityProblems.LogDensityOrder{0}()
+
+julia> # Construct the model. We'll use a correlation of 0.5.
+       model = Gaussian([1.0 0.5; 0.5 1.0]);
+
+julia> # Number of samples we want in the resulting chain.
+       num_samples = 10_000;
+
+julia> # Number of warmup steps, i.e. the number of steps to adapt the covariance of the proposal.
+       # Note that these are not included in the resulting chain, as `discard_initial=num_warmup`
+       # by default in the `sample` call. To include them, pass `discard_initial=0` to `sample`.
+       num_warmup = 10_000;
+
+julia> # Sample!
+       chain = sample(model, RAM(), 10_000; chain_type=Chains, num_warmup=10_000, progress=false);
+
+julia> norm(cov(Array(chain)) - [1.0 0.5; 0.5 1.0]) < 0.1
+true
+```
+
 # References
 [^VIH12]: Vihola (2012) Robust adaptive Metropolis algorithm with coerced acceptance rate, Statistics and computing.
 """
