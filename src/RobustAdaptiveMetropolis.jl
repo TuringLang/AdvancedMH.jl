@@ -74,7 +74,7 @@ Base.@kwdef struct RAM{T,A<:Union{Nothing,AbstractMatrix{T}}} <: AdvancedMH.MHSa
     "initial covariance matrix"
     S::A=nothing
     "lower bound on eigenvalues of the adapted covariance matrix"
-    eigenvalue_lower_bound::T=0
+    eigenvalue_lower_bound::T=0.0
     "upper bound on eigenvalues of the adapted covariance matrix"
     eigenvalue_upper_bound::T=Inf
 end
