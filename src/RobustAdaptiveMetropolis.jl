@@ -92,14 +92,30 @@ Base.@kwdef struct RAM{T,A<:Union{Nothing,AbstractMatrix{T}}} <: AdvancedMH.MHSa
     eigenvalue_upper_bound::T=Inf
 end
 
-# TODO: Should we record anything like the acceptance rates?
+"""
+    RAMState
+
+State of the Robust Adaptive Metropolis-Hastings (RAM) algorithm.
+
+See also: [`RAM`](@ref).
+
+# Fields
+$(FIELDS)
+"""
 struct RAMState{T1,L,A,T2,T3}
+    "current realization of the chain."
     x::T1
+    "log density of `x` under the target model."
     logprob::L
+    "current lower-triangular Cholesky factor."
     S::A
+    "log acceptance ratio of the previous iteration (not necessarily of `x`)."
     logα::T2
+    "current step size for adaptation of `S`."
     η::T3
+    "current iteration."
     iteration::Int
+    "whether the previous iteration was accepted."
     isaccept::Bool
 end
 
