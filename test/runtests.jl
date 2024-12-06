@@ -366,4 +366,6 @@ include("util.jl")
     end
 
     @testset "EMCEE" begin include("emcee.jl") end
+
+    include("RobustAdaptiveMetropolis.jl")
 end
