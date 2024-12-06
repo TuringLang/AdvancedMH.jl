@@ -8,7 +8,6 @@ using AdvancedMH: AdvancedMH
 export RAM
 
 # TODO: Should we generalise this arbitrary symmetric proposals?
-# TODO: Implement checking of eigenvalues to avoid degenerate covariance estimates, as in the paper.
 """
     RAM
 
@@ -71,7 +70,7 @@ Base.@kwdef struct RAM{T,A<:Union{Nothing,AbstractMatrix{T}}} <: AdvancedMH.MHSa
     α::T=0.234
     "negative exponent of the adaptation decay rate"
     γ::T=0.6
-    "initial covariance matrix"
+    "initial lower-triangular Cholesky factor"
     S::A=nothing
     "lower bound on eigenvalues of the adapted covariance matrix"
     eigenvalue_lower_bound::T=0.0
@@ -177,7 +176,7 @@ function valid_eigenvalues(S, lower_bound, upper_bound)
     # Short-circuit if the bounds are the default.
     (lower_bound == 0 && upper_bound == Inf) && return true
     # Note that this is just the diagonal when `S` is triangular.
-    eigenvals = LinearAlgebra.eigenvals(S)
+    eigenvals = LinearAlgebra.eigvals(S)
     return all(lower_bound .<= eigenvals .<= upper_bound)
 end
 
