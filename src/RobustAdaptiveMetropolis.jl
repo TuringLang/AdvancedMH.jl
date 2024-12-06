@@ -181,7 +181,7 @@ function AbstractMCMC.step(
     # Initialize the Cholesky factor of the covariance matrix.
     S = LowerTriangular(sampler.S === nothing ? diagm(0 => ones(eltype(sampler.γ), d)) : sampler.S)
 
-    # Constuct the initial state.
+    # Construct the initial state.
     lp = LogDensityProblems.logdensity(f, x)
     state = RAMState(x, lp, S, 0.0, 0, 1, true)
 
