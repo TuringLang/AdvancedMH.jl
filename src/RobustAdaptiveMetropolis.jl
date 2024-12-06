@@ -23,7 +23,7 @@ $(FIELDS)
 
 The following demonstrates how to implement a simple Gaussian model and sample from it using the RAM algorithm.
 
-```jldoctest
+```jldoctest ram-gaussian
 julia> using AdvancedMH, Random, Distributions, MCMCChains, LogDensityProblems, LinearAlgebra
 
 julia> # Define a Gaussian with zero mean and some covariance.
@@ -56,25 +56,39 @@ julia> # Set the seed so get some consistency.
        Random.seed!(1234);
 
 julia> # Sample!
-       chain = sample(model, RAM(), 10_000; chain_type=Chains, num_warmup=10_000, progress=false, initial_params=zeros(2));
+       chain = sample(model, RAM(), 10_000; chain_type=Chains, num_warmup, progress=false, initial_params=zeros(2));
 
 julia> norm(cov(Array(chain)) - [1.0 0.5; 0.5 1.0]) < 0.2
 true
 ```
 
+It's also possible to restrict the eigenvalues to avoid either too small or too large values. See p. 13 in [^VIH12].
+
+```jldoctest ram-gaussian`
+julia> chain = sample(
+           model,
+           RAM(eigenvalue_lower_bound=0.1, eigenvalue_upper_bound=2.0),
+           10_000;
+           chain_type=Chains, num_warmup, progress=false, initial_params=zeros(2)
+       );
+
+julia> norm(cov(Array(chain)) - [1.0 0.5; 0.5 1.0]) < 0.2
+true
+````
+
 # References
 [^VIH12]: Vihola (2012) Robust adaptive Metropolis algorithm with coerced acceptance rate, Statistics and computing.
 """
 Base.@kwdef struct RAM{T,A<:Union{Nothing,AbstractMatrix{T}}} <: AdvancedMH.MHSampler
-    "target acceptance rate"
+    "target acceptance rate. Default: 0.234."
     α::T=0.234
-    "negative exponent of the adaptation decay rate"
+    "negative exponent of the adaptation decay rate. Default: `0.6`."
     γ::T=0.6
-    "initial lower-triangular Cholesky factor"
+    "initial lower-triangular Cholesky factor. Default: `nothing`."
     S::A=nothing
-    "lower bound on eigenvalues of the adapted covariance matrix"
+    "lower bound on eigenvalues of the adapted Cholesky factor. Default: `0.0`."
     eigenvalue_lower_bound::T=0.0
-    "upper bound on eigenvalues of the adapted covariance matrix"
+    "upper bound on eigenvalues of the adapted Cholesky factor. Default: `Inf`."
     eigenvalue_upper_bound::T=Inf
 end
 
