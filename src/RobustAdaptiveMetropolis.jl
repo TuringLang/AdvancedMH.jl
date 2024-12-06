@@ -58,7 +58,7 @@ julia> # Set the seed so get some consistency.
 julia> # Sample!
        chain = sample(model, RAM(), 10_000; chain_type=Chains, num_warmup, progress=false, initial_params=zeros(2));
 
-julia> norm(cov(Array(chain)) - [1.0 0.5; 0.5 1.0]) < 0.2
+julia> isapprox(cov(Array(chain)), model.A; rtol = 0.2)
 true
 ```
 
@@ -134,15 +134,14 @@ function step_inner(
 
     # Sample the proposal.
     x = state.x
-    U = randn(rng, d)
-    x_new = x + state.S * U
+    U = randn(rng, eltype(x), d)
+    x_new = muladd(state.S, U, x)
 
     # Compute the acceptance probability.
     lp = state.logprob
     lp_new = LogDensityProblems.logdensity(f, x_new)
     logα = min(lp_new - lp, zero(lp))  # `min` because we'll use this for updating
-    # TODO: use `randexp` instead.
-    isaccept = log(rand(rng)) < logα
+    isaccept = randexp(rng) > -logα
 
     return x_new, lp_new, U, logα, isaccept
 end
@@ -177,13 +176,14 @@ function AbstractMCMC.step(
     d = LogDensityProblems.dimension(f)
 
     # Initial parameter state.
-    x = initial_params === nothing ? rand(rng, d) : initial_params
+    T = initial_params === nothing ? eltype(sampler.γ) : Base.promote_type(eltype(sampler.γ), eltype(initial_params))
+    x = initial_params === nothing ? rand(rng, T, d) : convert(AbstractVector{T}, initial_params)
     # Initialize the Cholesky factor of the covariance matrix.
-    S = LowerTriangular(sampler.S === nothing ? diagm(0 => ones(eltype(sampler.γ), d)) : sampler.S)
+    S = LowerTriangular(sampler.S === nothing ? diagm(0 => ones(T, d)) : convert(AbstractMatrix{T}, sampler.S))
 
-    # Constuct the initial state.
+    # Construct the initial state.
     lp = LogDensityProblems.logdensity(f, x)
-    state = RAMState(x, lp, S, 0.0, 0, 1, true)
+    state = RAMState(x, lp, S, zero(T), 0, 1, true)
 
     return AdvancedMH.Transition(x, lp, true), state
 end
@@ -207,7 +207,7 @@ function valid_eigenvalues(S, lower_bound, upper_bound)
     (lower_bound == 0 && upper_bound == Inf) && return true
     # Note that this is just the diagonal when `S` is triangular.
     eigenvals = LinearAlgebra.eigvals(S)
-    return all(lower_bound .<= eigenvals .<= upper_bound)
+    return all(x -> lower_bound <= x <= upper_bound, eigenvals)
 end
 
 function AbstractMCMC.step_warmup(
