@@ -78,7 +78,7 @@ Base.@kwdef struct RobustAdaptiveMetropolis{T,A<:Union{Nothing,AbstractMatrix{T}
     α::T = 0.234
     "negative exponent of the adaptation decay rate. Default: `0.6`."
     γ::T = 0.6
-    "initial lower-triangular Cholesky factor. If specified, should be convertible into a `LowerTriangular`. Default: `nothing`."
+    "initial lower-triangular Cholesky factor of the covariance matrix. If specified, should be convertible into a `LowerTriangular`. Default: `nothing`, which is interpreted as the identity matrix."
     S::A = nothing
     "lower bound on eigenvalues of the adapted Cholesky factor. Default: `0.0`."
     eigenvalue_lower_bound::T = 0.0
