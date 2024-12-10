@@ -194,10 +194,16 @@ function AbstractMCMC.step(
         convert(AbstractVector{T}, initial_params)
     end
     # Initialize the Cholesky factor of the covariance matrix.
-    S = LinearAlgebra.LowerTriangular(
-        sampler.S === nothing ? LinearAlgebra.diagm(0 => ones(T, d)) :
-        convert(AbstractMatrix{T}, sampler.S),
-    )
+    S_data if sampler.S === nothing
+        LinearAlgebra.diagm(0 => ones(T, d))
+    else
+        # Check the dimensionality of the provided `S`.
+        if size(sampler.S) != (d, d)
+            throw(ArgumentError("The provided `S` has the wrong dimensionality."))
+        end
+        convert(AbstractMatrix{T}, sampler.S)
+    end
+    S = LinearAlgebra.LowerTriangular(S_data)
 
     # Construct the initial state.
     lp = LogDensityProblems.logdensity(f, x)
