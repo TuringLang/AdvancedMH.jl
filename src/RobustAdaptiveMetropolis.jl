@@ -70,17 +70,18 @@ true
 # References
 [^VIH12]: Vihola (2012) Robust adaptive Metropolis algorithm with coerced acceptance rate, Statistics and computing.
 """
-Base.@kwdef struct RobustAdaptiveMetropolis{T,A<:Union{Nothing,AbstractMatrix{T}}} <: AdvancedMH.MHSampler
+Base.@kwdef struct RobustAdaptiveMetropolis{T,A<:Union{Nothing,AbstractMatrix{T}}} <:
+                   AdvancedMH.MHSampler
     "target acceptance rate. Default: 0.234."
-    α::T=0.234
+    α::T = 0.234
     "negative exponent of the adaptation decay rate. Default: `0.6`."
-    γ::T=0.6
+    γ::T = 0.6
     "initial lower-triangular Cholesky factor. Default: `nothing`."
-    S::A=nothing
+    S::A = nothing
     "lower bound on eigenvalues of the adapted Cholesky factor. Default: `0.0`."
-    eigenvalue_lower_bound::T=0.0
+    eigenvalue_lower_bound::T = 0.0
     "upper bound on eigenvalues of the adapted Cholesky factor. Default: `Inf`."
-    eigenvalue_upper_bound::T=Inf
+    eigenvalue_upper_bound::T = Inf
 end
 
 """
@@ -111,13 +112,22 @@ struct RobustAdaptiveMetropolisState{T1,L,A,T2,T3}
 end
 
 AbstractMCMC.getparams(state::RobustAdaptiveMetropolisState) = state.x
-AbstractMCMC.setparams!!(state::RobustAdaptiveMetropolisState, x) = RobustAdaptiveMetropolisState(x, state.logprob, state.S, state.logα, state.η, state.iteration, state.isaccept)
+AbstractMCMC.setparams!!(state::RobustAdaptiveMetropolisState, x) =
+    RobustAdaptiveMetropolisState(
+        x,
+        state.logprob,
+        state.S,
+        state.logα,
+        state.η,
+        state.iteration,
+        state.isaccept,
+    )
 
 function ram_step_inner(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
     sampler::RobustAdaptiveMetropolis,
-    state::RobustAdaptiveMetropolisState
+    state::RobustAdaptiveMetropolisState,
 )
     # This is the initial state.
     f = model.logdensity
@@ -137,7 +147,12 @@ function ram_step_inner(
     return x_new, lp_new, U, logα, isaccept
 end
 
-function ram_adapt(sampler::RobustAdaptiveMetropolis, state::RobustAdaptiveMetropolisState, logα::Real, U::AbstractVector)
+function ram_adapt(
+    sampler::RobustAdaptiveMetropolis,
+    state::RobustAdaptiveMetropolisState,
+    logα::Real,
+    U::AbstractVector,
+)
     Δα = exp(logα) - sampler.α
     S = state.S
     # TODO: Make this configurable by defining a more general path.
@@ -158,18 +173,25 @@ function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
     sampler::RobustAdaptiveMetropolis;
-    initial_params=nothing,
-    kwargs...
+    initial_params = nothing,
+    kwargs...,
 )
     # This is the initial state.
     f = model.logdensity
     d = LogDensityProblems.dimension(f)
 
     # Initial parameter state.
-    T = initial_params === nothing ? eltype(sampler.γ) : Base.promote_type(eltype(sampler.γ), eltype(initial_params))
-    x = initial_params === nothing ? rand(rng, T, d) : convert(AbstractVector{T}, initial_params)
+    T =
+        initial_params === nothing ? eltype(sampler.γ) :
+        Base.promote_type(eltype(sampler.γ), eltype(initial_params))
+    x =
+        initial_params === nothing ? rand(rng, T, d) :
+        convert(AbstractVector{T}, initial_params)
     # Initialize the Cholesky factor of the covariance matrix.
-    S = LowerTriangular(sampler.S === nothing ? diagm(0 => ones(T, d)) : convert(AbstractMatrix{T}, sampler.S))
+    S = LowerTriangular(
+        sampler.S === nothing ? diagm(0 => ones(T, d)) :
+        convert(AbstractMatrix{T}, sampler.S),
+    )
 
     # Construct the initial state.
     lp = LogDensityProblems.logdensity(f, x)
@@ -183,13 +205,22 @@ function AbstractMCMC.step(
     model::AbstractMCMC.LogDensityModel,
     sampler::RobustAdaptiveMetropolis,
     state::RobustAdaptiveMetropolisState;
-    kwargs...
+    kwargs...,
 )
     # Take the inner step.
     x_new, lp_new, U, logα, isaccept = ram_step_inner(rng, model, sampler, state)
     # Accept / reject the proposal.
-    state_new = RobustAdaptiveMetropolisState(isaccept ? x_new : state.x, isaccept ? lp_new : state.logprob, state.S, logα, state.η, state.iteration + 1, isaccept)
-    return AdvancedMH.Transition(state_new.x, state_new.logprob, state_new.isaccept), state_new
+    state_new = RobustAdaptiveMetropolisState(
+        isaccept ? x_new : state.x,
+        isaccept ? lp_new : state.logprob,
+        state.S,
+        logα,
+        state.η,
+        state.iteration + 1,
+        isaccept,
+    )
+    return AdvancedMH.Transition(state_new.x, state_new.logprob, state_new.isaccept),
+    state_new
 end
 
 function valid_eigenvalues(S, lower_bound, upper_bound)
@@ -205,20 +236,32 @@ function AbstractMCMC.step_warmup(
     model::AbstractMCMC.LogDensityModel,
     sampler::RobustAdaptiveMetropolis,
     state::RobustAdaptiveMetropolisState;
-    kwargs...
+    kwargs...,
 )
     # Take the inner step.
     x_new, lp_new, U, logα, isaccept = ram_step_inner(rng, model, sampler, state)
     # Adapt the proposal.
     S_new, η = ram_adapt(sampler, state, logα, U)
     # Check that `S_new` has eigenvalues in the desired range.
-    if !valid_eigenvalues(S_new, sampler.eigenvalue_lower_bound, sampler.eigenvalue_upper_bound)
+    if !valid_eigenvalues(
+        S_new,
+        sampler.eigenvalue_lower_bound,
+        sampler.eigenvalue_upper_bound,
+    )
         # In this case, we just keep the old `S` (p. 13 in Vihola, 2012).
         S_new = state.S
     end
 
     # Update state.
-    state_new = RobustAdaptiveMetropolisState(isaccept ? x_new : state.x, isaccept ? lp_new : state.logprob, S_new, logα, η, state.iteration + 1, isaccept)
-    return AdvancedMH.Transition(state_new.x, state_new.logprob, state_new.isaccept), state_new
+    state_new = RobustAdaptiveMetropolisState(
+        isaccept ? x_new : state.x,
+        isaccept ? lp_new : state.logprob,
+        S_new,
+        logα,
+        η,
+        state.iteration + 1,
+        isaccept,
+    )
+    return AdvancedMH.Transition(state_new.x, state_new.logprob, state_new.isaccept),
+    state_new
 end
-
