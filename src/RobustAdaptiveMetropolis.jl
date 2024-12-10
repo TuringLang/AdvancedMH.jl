@@ -189,7 +189,7 @@ function AbstractMCMC.step(
         Base.promote_type(eltype(sampler.γ), eltype(initial_params))
     end
     x = if initial_params === nothing
-        rand(rng, T, d)
+        randn(rng, T, d)
     else
         convert(AbstractVector{T}, initial_params)
     end
