@@ -40,7 +40,7 @@ end
 
             # Use aggressive adaptation.
             sampler =
-                RAM(γ = 0.51, eigenvalue_lower_bound = 0.9, eigenvalue_upper_bound = 1.1)
+                RobustAdaptiveMetropolis(γ = 0.51, eigenvalue_lower_bound = 0.9, eigenvalue_upper_bound = 1.1)
             num_warmup = 1000
             discard_initial = 0  # we're only keeping the warmup samples
             chain = sample(
