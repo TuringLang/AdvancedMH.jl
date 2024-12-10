@@ -16,5 +16,5 @@ DensityModel
 ## Samplers
 
 ```@docs
-RAM
+RobustAdaptiveMetropolis
 ```
