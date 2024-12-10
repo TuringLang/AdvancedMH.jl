@@ -169,10 +169,10 @@ function ram_adapt(
     # TODO: Maybe do in-place and then have the user extract it with a callback if they really want it.
     S_new = if sign(Δα) == 1
         # One rank update.
-        LinearAlgebra.lowrankupdate(LinearAlgebra.Cholesky(S), ΔS).L
+        LinearAlgebra.lowrankupdate(LinearAlgebra.Cholesky(S.data, :L, 0), ΔS).L
     else
         # One rank downdate.
-        LinearAlgebra.lowrankdowndate(LinearAlgebra.Cholesky(S), ΔS).L
+        LinearAlgebra.lowrankdowndate(LinearAlgebra.Cholesky(S.data, :L, 0), ΔS).L
     end
     return S_new, η
 end
