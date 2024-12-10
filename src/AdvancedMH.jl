@@ -23,7 +23,8 @@ export
     SymmetricRandomWalkProposal,
     Ensemble,
     StretchProposal,
-    MALA
+    MALA,
+    RobustAdaptiveMetropolis
 
 # Reexports
 export sample, MCMCThreads, MCMCDistributed, MCMCSerial
@@ -160,9 +161,6 @@ include("proposal.jl")
 include("mh-core.jl")
 include("emcee.jl")
 include("MALA.jl")
-
 include("RobustAdaptiveMetropolis.jl")
-using .RobustAdaptiveMetropolis
-export RAM
 
 end # module AdvancedMH

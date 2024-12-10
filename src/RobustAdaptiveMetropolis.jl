@@ -51,13 +51,13 @@ julia> # Sample!
             chain_type=Chains, num_warmup, progress=false, initial_params=zeros(2)
         );
 
-julia> isapprox(cov(Array(chain)), model.A; rtol = 0.2)
+julia> isapprox(cov(Array(chain)), model.Σ; rtol = 0.2)
 true
 ```
 
 It's also possible to restrict the eigenvalues to avoid either too small or too large values. See p. 13 in [^VIH12].
 
-```jldoctest ram-gaussian`
+```jldoctest ram-gaussian
 julia> chain = sample(
            model,
            RobustAdaptiveMetropolis(eigenvalue_lower_bound=0.1, eigenvalue_upper_bound=2.0),
@@ -144,7 +144,7 @@ function ram_step_inner(
     lp = state.logprob
     lp_new = LogDensityProblems.logdensity(f, x_new)
     logα = min(lp_new - lp, zero(lp))  # `min` because we'll use this for updating
-    isaccept = randexp(rng) > -logα
+    isaccept = Random.randexp(rng) > -logα
 
     return x_new, lp_new, U, logα, isaccept
 end
@@ -159,14 +159,14 @@ function ram_adapt(
     S = state.S
     # TODO: Make this configurable by defining a more general path.
     η = state.iteration^(-sampler.γ)
-    ΔS = η * abs(Δα) * S * U / norm(U)
+    ΔS = η * abs(Δα) * S * U / LinearAlgebra.norm(U)
     # TODO: Maybe do in-place and then have the user extract it with a callback if they really want it.
     S_new = if sign(Δα) == 1
         # One rank update.
-        LinearAlgebra.lowrankupdate(Cholesky(S), ΔS).L
+        LinearAlgebra.lowrankupdate(LinearAlgebra.Cholesky(S), ΔS).L
     else
         # One rank downdate.
-        LinearAlgebra.lowrankdowndate(Cholesky(S), ΔS).L
+        LinearAlgebra.lowrankdowndate(LinearAlgebra.Cholesky(S), ΔS).L
     end
     return S_new, η
 end
@@ -190,8 +190,8 @@ function AbstractMCMC.step(
         initial_params === nothing ? rand(rng, T, d) :
         convert(AbstractVector{T}, initial_params)
     # Initialize the Cholesky factor of the covariance matrix.
-    S = LowerTriangular(
-        sampler.S === nothing ? diagm(0 => ones(T, d)) :
+    S = LinearAlgebra.LowerTriangular(
+        sampler.S === nothing ? LinearAlgebra.diagm(0 => ones(T, d)) :
         convert(AbstractMatrix{T}, sampler.S),
     )
 
