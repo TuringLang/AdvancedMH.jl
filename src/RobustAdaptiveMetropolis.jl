@@ -14,8 +14,8 @@ $(FIELDS)
 
 The following demonstrates how to implement a simple Gaussian model and sample from it using the RAM algorithm.
 
-```jldoctest ram-gaussian
-julia> using AdvancedMH, Random, Distributions, MCMCChains, LogDensityProblems, LinearAlgebra
+```jldoctest ram-gaussian; setup=:(using Random; Random.seed!(1234);)
+julia> using AdvancedMH, Distributions, MCMCChains, LogDensityProblems, LinearAlgebra
 
 julia> # Define a Gaussian with zero mean and some covariance.
        struct Gaussian{A}
@@ -43,11 +43,13 @@ julia> # Number of warmup steps, i.e. the number of steps to adapt the covarianc
        # by default in the `sample` call. To include them, pass `discard_initial=0` to `sample`.
        num_warmup = 10_000;
 
-julia> # Set the seed so get some consistency.
-       Random.seed!(1234);
-
 julia> # Sample!
-       chain = sample(model, RobustAdaptiveMetropolis(), 10_000; chain_type=Chains, num_warmup, progress=false, initial_params=zeros(2));
+       chain = sample(
+            model,
+            RobustAdaptiveMetropolis(),
+            num_samples;
+            chain_type=Chains, num_warmup, progress=false, initial_params=zeros(2)
+        );
 
 julia> isapprox(cov(Array(chain)), model.A; rtol = 0.2)
 true
@@ -59,7 +61,7 @@ It's also possible to restrict the eigenvalues to avoid either too small or too 
 julia> chain = sample(
            model,
            RobustAdaptiveMetropolis(eigenvalue_lower_bound=0.1, eigenvalue_upper_bound=2.0),
-           10_000;
+           num_samples;
            chain_type=Chains, num_warmup, progress=false, initial_params=zeros(2)
        );
 
