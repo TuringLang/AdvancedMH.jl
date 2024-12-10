@@ -1,15 +1,6 @@
-module RobustAdaptiveMetropolis
-
-using Random, LogDensityProblems, LinearAlgebra, AbstractMCMC
-using DocStringExtensions: FIELDS
-
-using AdvancedMH: AdvancedMH
-
-export RAM
-
 # TODO: Should we generalise this arbitrary symmetric proposals?
 """
-    RAM
+    RobustAdaptiveMetropolis
 
 Robust Adaptive Metropolis-Hastings (RAM).
 
@@ -56,7 +47,7 @@ julia> # Set the seed so get some consistency.
        Random.seed!(1234);
 
 julia> # Sample!
-       chain = sample(model, RAM(), 10_000; chain_type=Chains, num_warmup, progress=false, initial_params=zeros(2));
+       chain = sample(model, RobustAdaptiveMetropolis(), 10_000; chain_type=Chains, num_warmup, progress=false, initial_params=zeros(2));
 
 julia> isapprox(cov(Array(chain)), model.A; rtol = 0.2)
 true
@@ -67,7 +58,7 @@ It's also possible to restrict the eigenvalues to avoid either too small or too 
 ```jldoctest ram-gaussian`
 julia> chain = sample(
            model,
-           RAM(eigenvalue_lower_bound=0.1, eigenvalue_upper_bound=2.0),
+           RobustAdaptiveMetropolis(eigenvalue_lower_bound=0.1, eigenvalue_upper_bound=2.0),
            10_000;
            chain_type=Chains, num_warmup, progress=false, initial_params=zeros(2)
        );
@@ -79,7 +70,7 @@ true
 # References
 [^VIH12]: Vihola (2012) Robust adaptive Metropolis algorithm with coerced acceptance rate, Statistics and computing.
 """
-Base.@kwdef struct RAM{T,A<:Union{Nothing,AbstractMatrix{T}}} <: AdvancedMH.MHSampler
+Base.@kwdef struct RobustAdaptiveMetropolis{T,A<:Union{Nothing,AbstractMatrix{T}}} <: AdvancedMH.MHSampler
     "target acceptance rate. Default: 0.234."
     α::T=0.234
     "negative exponent of the adaptation decay rate. Default: `0.6`."
@@ -93,16 +84,16 @@ Base.@kwdef struct RAM{T,A<:Union{Nothing,AbstractMatrix{T}}} <: AdvancedMH.MHSa
 end
 
 """
-    RAMState
+    RobustAdaptiveMetropolisState
 
 State of the Robust Adaptive Metropolis-Hastings (RAM) algorithm.
 
-See also: [`RAM`](@ref).
+See also: [`RobustAdaptiveMetropolis`](@ref).
 
 # Fields
 $(FIELDS)
 """
-struct RAMState{T1,L,A,T2,T3}
+struct RobustAdaptiveMetropolisState{T1,L,A,T2,T3}
     "current realization of the chain."
     x::T1
     "log density of `x` under the target model."
@@ -119,14 +110,14 @@ struct RAMState{T1,L,A,T2,T3}
     isaccept::Bool
 end
 
-AbstractMCMC.getparams(state::RAMState) = state.x
-AbstractMCMC.setparams!!(state::RAMState, x) = RAMState(x, state.logprob, state.S, state.logα, state.η, state.iteration, state.isaccept)
+AbstractMCMC.getparams(state::RobustAdaptiveMetropolisState) = state.x
+AbstractMCMC.setparams!!(state::RobustAdaptiveMetropolisState, x) = RobustAdaptiveMetropolisState(x, state.logprob, state.S, state.logα, state.η, state.iteration, state.isaccept)
 
-function step_inner(
+function ram_step_inner(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
-    sampler::RAM,
-    state::RAMState
+    sampler::RobustAdaptiveMetropolis,
+    state::RobustAdaptiveMetropolisState
 )
     # This is the initial state.
     f = model.logdensity
@@ -146,8 +137,7 @@ function step_inner(
     return x_new, lp_new, U, logα, isaccept
 end
 
-function adapt(sampler::RAM, state::RAMState, logα::Real, U::AbstractVector)
-    # Update `
+function ram_adapt(sampler::RobustAdaptiveMetropolis, state::RobustAdaptiveMetropolisState, logα::Real, U::AbstractVector)
     Δα = exp(logα) - sampler.α
     S = state.S
     # TODO: Make this configurable by defining a more general path.
@@ -167,7 +157,7 @@ end
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
-    sampler::RAM;
+    sampler::RobustAdaptiveMetropolis;
     initial_params=nothing,
     kwargs...
 )
@@ -183,7 +173,7 @@ function AbstractMCMC.step(
 
     # Construct the initial state.
     lp = LogDensityProblems.logdensity(f, x)
-    state = RAMState(x, lp, S, zero(T), 0, 1, true)
+    state = RobustAdaptiveMetropolisState(x, lp, S, zero(T), 0, 1, true)
 
     return AdvancedMH.Transition(x, lp, true), state
 end
@@ -191,14 +181,14 @@ end
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
-    sampler::RAM,
-    state::RAMState;
+    sampler::RobustAdaptiveMetropolis,
+    state::RobustAdaptiveMetropolisState;
     kwargs...
 )
     # Take the inner step.
-    x_new, lp_new, U, logα, isaccept = step_inner(rng, model, sampler, state)
+    x_new, lp_new, U, logα, isaccept = ram_step_inner(rng, model, sampler, state)
     # Accept / reject the proposal.
-    state_new = RAMState(isaccept ? x_new : state.x, isaccept ? lp_new : state.logprob, state.S, logα, state.η, state.iteration + 1, isaccept)
+    state_new = RobustAdaptiveMetropolisState(isaccept ? x_new : state.x, isaccept ? lp_new : state.logprob, state.S, logα, state.η, state.iteration + 1, isaccept)
     return AdvancedMH.Transition(state_new.x, state_new.logprob, state_new.isaccept), state_new
 end
 
@@ -213,14 +203,14 @@ end
 function AbstractMCMC.step_warmup(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
-    sampler::RAM,
-    state::RAMState;
+    sampler::RobustAdaptiveMetropolis,
+    state::RobustAdaptiveMetropolisState;
     kwargs...
 )
     # Take the inner step.
-    x_new, lp_new, U, logα, isaccept = step_inner(rng, model, sampler, state)
+    x_new, lp_new, U, logα, isaccept = ram_step_inner(rng, model, sampler, state)
     # Adapt the proposal.
-    S_new, η = adapt(sampler, state, logα, U)
+    S_new, η = ram_adapt(sampler, state, logα, U)
     # Check that `S_new` has eigenvalues in the desired range.
     if !valid_eigenvalues(S_new, sampler.eigenvalue_lower_bound, sampler.eigenvalue_upper_bound)
         # In this case, we just keep the old `S` (p. 13 in Vihola, 2012).
@@ -228,8 +218,7 @@ function AbstractMCMC.step_warmup(
     end
 
     # Update state.
-    state_new = RAMState(isaccept ? x_new : state.x, isaccept ? lp_new : state.logprob, S_new, logα, η, state.iteration + 1, isaccept)
+    state_new = RobustAdaptiveMetropolisState(isaccept ? x_new : state.x, isaccept ? lp_new : state.logprob, S_new, logα, η, state.iteration + 1, isaccept)
     return AdvancedMH.Transition(state_new.x, state_new.logprob, state_new.isaccept), state_new
 end
 
-end

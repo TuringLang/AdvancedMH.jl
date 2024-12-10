@@ -3,8 +3,9 @@ module AdvancedMH
 # Import the relevant libraries.
 using AbstractMCMC
 using Distributions
-using LinearAlgebra: I
+using LinearAlgebra: LinearAlgebra, I
 using FillArrays: Zeros
+using DocStringExtensions: FIELDS
 
 using LogDensityProblems: LogDensityProblems
 
