@@ -143,7 +143,13 @@ function ram_step_inner(
     # Compute the acceptance probability.
     lp = state.logprob
     lp_new = LogDensityProblems.logdensity(f, x_new)
-    logα = min(lp_new - lp, zero(lp))  # `min` because we'll use this for updating
+    # Technically, the `min` here is unnecessary for sampling according to `min(..., 1)`.
+    # However, `ram_adapt` assumes that `logα` actually represents the log acceptance probability
+    # and is thus bounded at 0. Moreover, users might be interested in inspecting the average
+    # acceptance rate to check that the algorithm achieves something similar to the target rate.
+    # Hence, it's a bit more convenient for the user if we just perform the `min` here
+    # so they can just take an average of (`exp` of) the `logα` values.
+    logα = min(lp_new - lp, zero(lp))
     isaccept = Random.randexp(rng) > -logα
 
     return x_new, lp_new, U, logα, isaccept
