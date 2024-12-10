@@ -194,7 +194,7 @@ function AbstractMCMC.step(
         convert(AbstractVector{T}, initial_params)
     end
     # Initialize the Cholesky factor of the covariance matrix.
-    S_data if sampler.S === nothing
+    S_data = if sampler.S === nothing
         LinearAlgebra.diagm(0 => ones(T, d))
     else
         # Check the dimensionality of the provided `S`.
