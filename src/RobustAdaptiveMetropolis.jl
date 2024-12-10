@@ -183,12 +183,16 @@ function AbstractMCMC.step(
     d = LogDensityProblems.dimension(f)
 
     # Initial parameter state.
-    T =
-        initial_params === nothing ? eltype(sampler.γ) :
+    T = if initial_params === nothing
+        eltype(sampler.γ)
+    else
         Base.promote_type(eltype(sampler.γ), eltype(initial_params))
-    x =
-        initial_params === nothing ? rand(rng, T, d) :
+    end
+    x = if initial_params === nothing
+        rand(rng, T, d)
+    else
         convert(AbstractVector{T}, initial_params)
+    end
     # Initialize the Cholesky factor of the covariance matrix.
     S = LinearAlgebra.LowerTriangular(
         sampler.S === nothing ? LinearAlgebra.diagm(0 => ones(T, d)) :
