@@ -67,7 +67,7 @@ julia> chain = sample(
 
 julia> norm(cov(Array(chain)) - [1.0 0.5; 0.5 1.0]) < 0.2
 true
-````
+```
 
 # References
 [^VIH12]: Vihola (2012) Robust adaptive Metropolis algorithm with coerced acceptance rate, Statistics and computing.
