@@ -114,16 +114,11 @@ struct RobustAdaptiveMetropolisState{T1,L,A,T2,T3}
 end
 
 AbstractMCMC.getparams(state::RobustAdaptiveMetropolisState) = state.x
-AbstractMCMC.setparams!!(state::RobustAdaptiveMetropolisState, x) =
-    RobustAdaptiveMetropolisState(
-        x,
-        state.logprob,
-        state.S,
-        state.logα,
-        state.η,
-        state.iteration,
-        state.isaccept,
+function AbstractMCMC.setparams!!(state::RobustAdaptiveMetropolisState, x)
+    return RobustAdaptiveMetropolisState(
+        x, state.logprob, state.S, state.logα, state.η, state.iteration, state.isaccept
     )
+end
 
 function ram_step_inner(
     rng::Random.AbstractRNG,
@@ -181,7 +176,7 @@ function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
     sampler::RobustAdaptiveMetropolis;
-    initial_params = nothing,
+    initial_params=nothing,
     kwargs...,
 )
     # This is the initial state.
@@ -262,9 +257,7 @@ function AbstractMCMC.step_warmup(
     S_new, η = ram_adapt(sampler, state, logα, U)
     # Check that `S_new` has eigenvalues in the desired range.
     if !valid_eigenvalues(
-        S_new,
-        sampler.eigenvalue_lower_bound,
-        sampler.eigenvalue_upper_bound,
+        S_new, sampler.eigenvalue_lower_bound, sampler.eigenvalue_upper_bound
     )
         # In this case, we just keep the old `S` (p. 13 in Vihola, 2012).
         S_new = state.S
