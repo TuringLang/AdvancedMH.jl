@@ -3,8 +3,9 @@ module AdvancedMH
 # Import the relevant libraries.
 using AbstractMCMC
 using Distributions
-using LinearAlgebra: I
+using LinearAlgebra: LinearAlgebra, I
 using FillArrays: Zeros
+using DocStringExtensions: FIELDS
 
 using LogDensityProblems: LogDensityProblems
 
@@ -22,7 +23,8 @@ export
     SymmetricRandomWalkProposal,
     Ensemble,
     StretchProposal,
-    MALA
+    MALA,
+    RobustAdaptiveMetropolis
 
 # Reexports
 export sample, MCMCThreads, MCMCDistributed, MCMCSerial
@@ -159,5 +161,6 @@ include("proposal.jl")
 include("mh-core.jl")
 include("emcee.jl")
 include("MALA.jl")
+include("RobustAdaptiveMetropolis.jl")
 
 end # module AdvancedMH
