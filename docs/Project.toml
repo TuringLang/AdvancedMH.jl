@@ -1,5 +1,15 @@
 [deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+LogDensityProblems = "6fdf6af0-433a-55f7-b3ed-c6c6e0b8df7c"
+MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
 Documenter = "1"
+Distributions = "0.25"
+LinearAlgebra = "1.6"
+LogDensityProblems = "2"
+MCMCChains = "6.0.4"
+Random = "1.6"
