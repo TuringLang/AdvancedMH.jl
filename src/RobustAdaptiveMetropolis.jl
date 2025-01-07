@@ -160,7 +160,7 @@ function ram_adapt(
     S = state.S
     # TODO: Make this configurable by defining a more general path.
     η = state.iteration^(-sampler.γ)
-    ΔS = (η * abs(Δα)) * S * U / LinearAlgebra.norm(U)
+    ΔS = sqrt(η * abs(Δα)) * S * U / LinearAlgebra.norm(U)
     # TODO: Maybe do in-place and then have the user extract it with a callback if they really want it.
     S_new = if sign(Δα) == 1
         # One rank update.
