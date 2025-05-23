@@ -7,9 +7,9 @@ MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
-Documenter = "1"
 Distributions = "0.25"
+Documenter = "1"
 LinearAlgebra = "1.6"
 LogDensityProblems = "2"
-MCMCChains = "6.0.4"
+MCMCChains = "6.0.4, 7"
 Random = "1.6"
