@@ -23,6 +23,9 @@ logdensity(model::DensityModelOrLogDensityModel, t::GradientTransition) = t.lp
 function AbstractMCMC.getparams(t::GradientTransition)
     return t.params
 end
+function AbstractMCMC.getstats(t::GradientTransition)
+    return (accepted=t.accepted,)
+end
 
 function AbstractMCMC.setparams!!(model::DensityModelOrLogDensityModel, t::GradientTransition, params)
     lp, gradient = logdensity_and_gradient(model, params)

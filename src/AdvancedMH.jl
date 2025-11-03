@@ -146,6 +146,9 @@ end
 function AbstractMCMC.getparams(t::Transition)
     return t.params
 end
+function AbstractMCMC.getstats(t::Transition)
+    return (accepted=t.accepted,)
+end
 
 # TODO (sunxd): remove `DensityModel` in favor of `AbstractMCMC.LogDensityModel`
 function AbstractMCMC.setparams!!(model::DensityModelOrLogDensityModel, t::Transition, params)

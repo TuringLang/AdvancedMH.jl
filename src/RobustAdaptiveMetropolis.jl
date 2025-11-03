@@ -116,8 +116,17 @@ end
 AbstractMCMC.getparams(state::RobustAdaptiveMetropolisState) = state.x
 function AbstractMCMC.setparams!!(state::RobustAdaptiveMetropolisState, x)
     return RobustAdaptiveMetropolisState(
-        x, state.logprob, state.S, state.logα, state.η, state.iteration, state.isaccept
+        x,
+        state.logprob,
+        state.S,
+        state.logα,
+        state.η,
+        state.iteration,
+        state.isaccept,
     )
+end
+function AbstractMCMC.getstats(state::RobustAdaptiveMetropolisState)
+    return (logα = state.logα, η = state.η, accepted = state.isaccept)
 end
 
 function ram_step_inner(
