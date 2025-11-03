@@ -53,6 +53,15 @@ include("util.jl")
         end
     end
 
+    @testset "AbstractMCMC.getstats" begin
+        t1, _ = AbstractMCMC.step(Random.default_rng(), model, StaticMH([Normal(0, 1), Normal(0, 1)]))
+        t2, _ = AbstractMCMC.step(Random.default_rng(), model, MALA(x -> MvNormal(x, I)); initial_params=ones(2))
+        for t in [t1, t2]
+            stats = AbstractMCMC.getstats(t)
+            @test stats == (accepted = t.accepted,)
+        end
+    end
+
     @testset "StaticMH" begin
         # Set up our sampler with initial parameters.
         spl1 = StaticMH([Normal(0,1), Normal(0, 1)])
