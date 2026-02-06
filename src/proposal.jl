@@ -138,6 +138,7 @@ Users with custom proposal types should extend this function to enable
 mixed-dimension proposal vectors.
 """
 proposal_dim(p::Proposal{<:UnivariateDistribution}) = 1
+proposal_dim(::Proposal{<:Function}) = 1
 proposal_dim(p::Proposal{<:MultivariateDistribution}) = length(p.proposal)
 function proposal_dim(p::Proposal{<:AbstractArray})
     return sum(d -> d isa UnivariateDistribution ? 1 : length(d), p.proposal)
