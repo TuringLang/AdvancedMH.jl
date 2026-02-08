@@ -145,7 +145,7 @@ function proposal_dim(p::Proposal{<:AbstractArray})
 end
 
 function _vcat_proposals(draws)
-    return reduce(vcat, draws)
+    return vcat(draws...)
 end
 
 """
@@ -155,6 +155,14 @@ Split a flat parameter vector `params` into chunks matching each proposal's dime
 as determined by [`proposal_dim`](@ref).
 """
 function _split_params(proposals::AbstractArray{<:Proposal}, params::AbstractVector)
+    total_dim = sum(proposal_dim, proposals)
+    if total_dim != length(params)
+        throw(DimensionMismatch(
+            "sum of proposal dimensions ($total_dim) does not match parameter length ($(length(params))). " *
+            "For function-valued proposals, `proposal_dim` defaults to 1; override it for your callable type " *
+            "to specify a different dimension."
+        ))
+    end
     result = Vector{Any}(undef, length(proposals))
     offset = 0
     for (i, p) in enumerate(proposals)

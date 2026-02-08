@@ -330,6 +330,14 @@ include("util.jl")
         p5 = [StaticProposal(Normal()), RandomWalkProposal(MvNormal(zeros(2), I))]
         chain5 = sample(m5, MetropolisHastings(p5), 10; chain_type=Any, initial_params=[1.0, 2.0, 3.0], progress=false)
         @test chain5[1].params == [1.0, 2.0, 3.0]
+
+        # Single proposal in a vector should still produce a vector of params
+        m6 = DensityModel(x -> x[1])
+        p6 = [StaticProposal(Normal())]
+        chain6 = sample(m6, MetropolisHastings(p6), 10; chain_type=Any, progress=false)
+        @test length(chain6) == 10
+        @test chain6[1].params isa AbstractVector
+        @test length(chain6[1].params) == 1
     end
 
     @testset "MALA" begin
