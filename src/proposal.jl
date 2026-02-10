@@ -110,7 +110,7 @@ end
 
 function propose(
     rng::Random.AbstractRNG,
-    proposal::Proposal{<:Function}, 
+    proposal::Proposal{<:Function},
     model::DensityModelOrLogDensityModel,
     t
 )
@@ -129,24 +129,75 @@ end
 # Multiple proposals
 ####################
 
+"""
+    proposal_dim(p::Proposal)
+
+Return the number of scalar parameters produced by proposal `p`.
+
+Users with custom proposal types should extend this function to enable
+mixed-dimension proposal vectors.
+"""
+proposal_dim(p::Proposal{<:UnivariateDistribution}) = 1
+proposal_dim(::Proposal{<:Function}) = 1
+proposal_dim(p::Proposal{<:MultivariateDistribution}) = length(p.proposal)
+function proposal_dim(p::Proposal{<:AbstractArray})
+    return sum(d -> d isa UnivariateDistribution ? 1 : length(d), p.proposal)
+end
+
+function _vcat_proposals(draws)
+    return vcat(draws...)
+end
+
+"""
+    _split_params(proposals::AbstractArray{<:Proposal}, params::AbstractVector)
+
+Split a flat parameter vector `params` into chunks matching each proposal's dimension,
+as determined by [`proposal_dim`](@ref).
+"""
+function _split_params(proposals::AbstractArray{<:Proposal}, params::AbstractVector)
+    total_dim = sum(proposal_dim, proposals)
+    if total_dim != length(params)
+        throw(DimensionMismatch(
+            "sum of proposal dimensions ($total_dim) does not match parameter length ($(length(params))). " *
+            "For function-valued proposals, `proposal_dim` defaults to 1; override it for your callable type " *
+            "to specify a different dimension."
+        ))
+    end
+    result = Vector{Any}(undef, length(proposals))
+    offset = 0
+    for (i, p) in enumerate(proposals)
+        dim = proposal_dim(p)
+        if dim == 1
+            result[i] = params[offset+1]
+        else
+            result[i] = params[(offset+1):(offset+dim)]
+        end
+        offset += dim
+    end
+    return result
+end
+
 function propose(
     rng::Random.AbstractRNG,
     proposals::AbstractArray{<:Proposal},
     model::DensityModelOrLogDensityModel,
 )
-    return map(proposals) do proposal
+    draws = map(proposals) do proposal
         return propose(rng, proposal, model)
     end
+    return _vcat_proposals(draws)
 end
 function propose(
     rng::Random.AbstractRNG,
     proposals::AbstractArray{<:Proposal},
     model::DensityModelOrLogDensityModel,
-    ts,
+    ts::AbstractVector,
 )
-    return map(proposals, ts) do proposal, t
+    split_ts = _split_params(proposals, ts)
+    draws = map(proposals, split_ts) do proposal, t
         return propose(rng, proposal, model, t)
     end
+    return _vcat_proposals(draws)
 end
 
 @generated function propose(
@@ -230,6 +281,16 @@ function logratio_proposal_density(proposals::Tuple, states::Tuple, candidates::
         Base.tail(proposals), Base.tail(states), Base.tail(candidates)
     )
     return valfirst + valtail
+end
+
+function logratio_proposal_density(
+    proposals::AbstractArray{<:Proposal}, states::AbstractVector, candidates::AbstractVector
+)
+    split_states = _split_params(proposals, states)
+    split_candidates = _split_params(proposals, candidates)
+    return sum(zip(proposals, split_states, split_candidates)) do (proposal, state, candidate)
+        return logratio_proposal_density(proposal, state, candidate)
+    end
 end
 
 # fallback for general iterators (arrays etc.) - possibly not type stable!

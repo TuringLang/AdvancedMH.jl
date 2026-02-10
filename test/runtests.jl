@@ -294,6 +294,52 @@ include("util.jl")
         end
     end
 
+    @testset "Varying dimension proposals" begin
+        # Issue #120: proposals of varying dimensions can't be combined in a vector
+
+        # Basic reproduce case from the issue: scalar + 2D multivariate
+        m1 = DensityModel(x -> x[1] + x[2] + x[3])
+        p1 = [StaticProposal(Normal()), RandomWalkProposal(MvNormal(zeros(2), I))]
+        chain1 = sample(m1, MetropolisHastings(p1), 10; chain_type=Any, progress=false)
+        @test length(chain1) == 10
+        @test chain1[1].params isa AbstractVector
+        @test length(chain1[1].params) == 3
+
+        # Reversed order: 2D multivariate first, then scalar
+        p2 = [StaticProposal(MvNormal(zeros(2), I)), RandomWalkProposal(Normal())]
+        chain2 = sample(m1, MetropolisHastings(p2), 10; chain_type=Any, progress=false)
+        @test length(chain2) == 10
+        @test length(chain2[1].params) == 3
+
+        # Multiple multivariate proposals: 2D + 3D
+        m3 = DensityModel(x -> sum(x))
+        p3 = [RandomWalkProposal(MvNormal(zeros(2), I)), RandomWalkProposal(MvNormal(zeros(3), I))]
+        chain3 = sample(m3, MetropolisHastings(p3), 10; chain_type=Any, progress=false)
+        @test length(chain3) == 10
+        @test length(chain3[1].params) == 5
+
+        # Backward compatibility: all scalar proposals still work
+        m4 = DensityModel(x -> x[1] + x[2])
+        p4 = [StaticProposal(Normal()), RandomWalkProposal(Normal())]
+        chain4 = sample(m4, MetropolisHastings(p4), 100; chain_type=Any, progress=false)
+        @test length(chain4) == 100
+        @test length(chain4[1].params) == 2
+
+        # With initial_params
+        m5 = DensityModel(x -> x[1] + x[2] + x[3])
+        p5 = [StaticProposal(Normal()), RandomWalkProposal(MvNormal(zeros(2), I))]
+        chain5 = sample(m5, MetropolisHastings(p5), 10; chain_type=Any, initial_params=[1.0, 2.0, 3.0], progress=false)
+        @test chain5[1].params == [1.0, 2.0, 3.0]
+
+        # Single proposal in a vector should still produce a vector of params
+        m6 = DensityModel(x -> x[1])
+        p6 = [StaticProposal(Normal())]
+        chain6 = sample(m6, MetropolisHastings(p6), 10; chain_type=Any, progress=false)
+        @test length(chain6) == 10
+        @test chain6[1].params isa AbstractVector
+        @test length(chain6[1].params) == 1
+    end
+
     @testset "MALA" begin
         @testset "basic" begin
             # Set up the sampler.
